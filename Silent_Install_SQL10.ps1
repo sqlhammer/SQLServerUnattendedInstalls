@@ -15,7 +15,7 @@ installation of MS SQL Server 2008 / 2008 R2 as a Stand-A-Lone Instance or a Win
 
 .DESCRIPTION
 This script is designed to be a start to finish solution for unattended or silent installations
-of MS SQL Server 2008 / 2008 R2 at Liberty Tax Service. The script has certain Liberty defaults
+of MS SQL Server 2008 / 2008 R2. The script has certain defaults
 registered within it that you can optionally select for expediancy in entering the necessary information.
 It will then walk you through a number of questions specific to the cluster that you are installing
 this instance on and then create the necessary configuration.ini files. At the end you will be able
@@ -56,20 +56,20 @@ IF ((get-alias | where-object {$_.name -eq "out-clipboard"} | select name) -NotL
 ###Functions####
 ################
 
-#See if the user wants to use Liberty standard responses for some options
-function UseLibertyDefaults()
+#See if the user wants to use standard responses for some options
+function UseDefaults()
 {
-	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","By selecting yes you will be allowing this script to skip certain questions where there are registered Liberty defaults and skip all informational messages. For example, regarding services accounts you will be asked what environment this install is for but not the service accounts. Those will be populated automatically."
+	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","By selecting yes you will be allowing this script to skip certain questions where there are registered defaults and skip all informational messages. For example, regarding services accounts you will be asked what environment this install is for but not the service accounts. Those will be populated automatically."
 	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","By selecting no you will be given the full opportunity to select every configuration and set variables manually."
 	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
 	$caption = "Question!"
-	$message = "Would you like to use Liberty minimal install with default options for choices where applicable?"
-	$LibertyDefaultChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
+	$message = "Would you like to use minimal install with default options for choices where applicable?"
+	$DefaultChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
 
-	switch ($LibertyDefaultChoice)
+	switch ($DefaultChoice)
 	{
-		0 {$Script:LibertyDefaultChoice = "YES"}
-		1 {$Script:LibertyDefaultChoice = "NO"}
+		0 {$Script:DefaultChoice = "YES"}
+		1 {$Script:DefaultChoice = "NO"}
 	}
 }
 
@@ -510,7 +510,7 @@ function SetSysAdminAccounts([string]$UseDefaults, $InstallType)
 	{
 		#SET SYSADMIN ACCOUNT HERE
 		$AcctList = (read-host "Enter a comma delimited list of sysadmin accounts for this instance
-		eg LIBERTY\Database Administration, LIBERTY\SCMAdmin").split(",")
+		eg DOMAIN\Database Administration, DOMAIN\Account2").split(",")
 
 		$AcctsComplete = [string]""
 		foreach ($Acct in $AcctList)
@@ -523,8 +523,8 @@ function SetSysAdminAccounts([string]$UseDefaults, $InstallType)
 		"SQLSYSADMINACCOUNTS=$AcctsComplete" |  Out-File $file -Append
 		
 		#Choose Security Mode
-		$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will enable mixed mode authentication which allows for Windows or SQL Authentication. NOTE: This is not a best practice and violates Liberty's development standards."
-		$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will restrict your installation to Windows Authentication. NOTE: This option is best practice and a Liberty development standard."
+		$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will enable mixed mode authentication which allows for Windows or SQL Authentication."
+		$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will restrict your installation to Windows Authentication."
 		$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
 		$caption = "Question!"
 		$message = "Would you like to use Mixed Mode Authentication (not recommended)?"
@@ -544,7 +544,7 @@ function SetSysAdminAccounts([string]$UseDefaults, $InstallType)
 	ELSE
 	{
 		#SET SYSADMIN ACCOUNT HERE
-		$AcctList = "LIBERTY\Database Administration, LIBERTY\SCMAdmin".split(",")
+		$AcctList = "DOMAIN\Database Administration, DOMAIN\Account2".split(",")
 
 		$AcctsComplete = [string]""
 		foreach ($Acct in $AcctList)
@@ -585,30 +585,30 @@ function SetServiceAccounts([string]$UseDefaults,[string]$Env,[string]$InstallTy
 		{
 			"DEV" 
 			{
-				$Script:SQLServiceAccount = 'LIBERTY\DevMSSQLService'
+				$Script:SQLServiceAccount = 'DOMAIN\DevMSSQLService'
 				"SQLSVCACCOUNT=`"$SQLServiceAccount`"" |  Out-File $file -Append
-				$Script:SQLAgentAccount = 'LIBERTY\DevAgentService'
+				$Script:SQLAgentAccount = 'DOMAIN\DevAgentService'
 				"AGTSVCACCOUNT=`"$SQLAgentAccount`"" |  Out-File $file -Append
 			}
 			"SIT" 
 			{
-				$Script:SQLServiceAccount = 'LIBERTY\SITMSSQLService'
+				$Script:SQLServiceAccount = 'DOMAIN\SITMSSQLService'
 				"SQLSVCACCOUNT=`"$SQLServiceAccount`"" |  Out-File $file -Append
-				$Script:SQLAgentAccount = 'LIBERTY\SITAgentService'
+				$Script:SQLAgentAccount = 'DOMAIN\SITAgentService'
 				"AGTSVCACCOUNT=`"$SQLAgentAccount`"" |  Out-File $file -Append
 			}
 			"QA" 
 			{
-				$Script:SQLServiceAccount = 'LIBERTY\QAMSSQLService'
+				$Script:SQLServiceAccount = 'DOMAIN\QAMSSQLService'
 				"SQLSVCACCOUNT=`"$SQLServiceAccount`"" |  Out-File $file -Append
-				$Script:SQLAgentAccount = 'LIBERTY\QAAgentService'
+				$Script:SQLAgentAccount = 'DOMAIN\QAAgentService'
 				"AGTSVCACCOUNT=`"$SQLAgentAccount`"" |  Out-File $file -Append
 			}
 			"PRODUCTION" 
 			{
-				$Script:SQLServiceAccount = 'LIBERTY\MSSQLService'
+				$Script:SQLServiceAccount = 'DOMAIN\MSSQLService'
 				"SQLSVCACCOUNT=`"$SQLServiceAccount`"" |  Out-File $file -Append
-				$Script:SQLAgentAccount = 'LIBERTY\AgentService'
+				$Script:SQLAgentAccount = 'DOMAIN\AgentService'
 				"AGTSVCACCOUNT=`"$SQLAgentAccount`"" |  Out-File $file -Append
 			}
 		}
@@ -846,11 +846,11 @@ function PrintExecCMD([string]$SQLAuthMode)
 ###   Main  ####
 ################
 
-UseLibertyDefaults
+UseDefaults
 	
-WelcomeMessage $LibertyDefaultChoice
+WelcomeMessage $DefaultChoice
 	
-SelectEnvironment $LibertyDefaultChoice
+SelectEnvironment $DefaultChoice
 
 SetInstallationType
 
@@ -864,15 +864,15 @@ switch ( $InstallChoice )
 		
 		ConfigureInstanceOptions $InstallChoice
 		
-		SetFeatures $LibertyDefaultChoice
+		SetFeatures $DefaultChoice
 		
-		SetSysAdminAccounts $LibertyDefaultChoice $InstallChoice
+		SetSysAdminAccounts $DefaultChoice $InstallChoice
 		
-		SetServiceAccounts $LibertyDefaultChoice $EnvironmentSelection $InstallChoice
+		SetServiceAccounts $DefaultChoice $EnvironmentSelection $InstallChoice
 		
 		SetFileDirectories
 		
-		ExitMessage $LibertyDefaultChoice, $InstallChoice
+		ExitMessage $DefaultChoice, $InstallChoice
 		
 		#Offer an execution right now
 		$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","By selecting yes this script will compile an executable command and begin the installation immediately."
@@ -908,11 +908,11 @@ switch ( $InstallChoice )
 			
 			ConfigureInstanceOptions $InstallChoice
 			
-			SetFeatures $LibertyDefaultChoice
+			SetFeatures $DefaultChoice
 			
-			SetSysAdminAccounts $LibertyDefaultChoice $InstallChoice
+			SetSysAdminAccounts $DefaultChoice $InstallChoice
 			
-			SetServiceAccounts $LibertyDefaultChoice $EnvironmentSelection $InstallChoice
+			SetServiceAccounts $DefaultChoice $EnvironmentSelection $InstallChoice
 
 			SetFileDirectories
 
@@ -920,7 +920,7 @@ switch ( $InstallChoice )
 
 			WriteAddNodeFile
 
-			ExitMessage $LibertyDefaultChoice, $InstallChoice
+			ExitMessage $DefaultChoice, $InstallChoice
 			
 			#Offer an execution right now
 			$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","By selecting yes this script will compile an executable command and begin the installation immediately."
@@ -958,13 +958,13 @@ switch ( $InstallChoice )
 			
 			ConfigureInstanceOptions $InstallChoice
 			
-			SetServiceAccounts $LibertyDefaultChoice $EnvironmentSelection $InstallChoice
+			SetServiceAccounts $DefaultChoice $EnvironmentSelection $InstallChoice
 
-			ExitMessage $LibertyDefaultChoice $InstallChoice
+			ExitMessage $DefaultChoice $InstallChoice
 		}
 		Catch
 		{ 
-			Write-Error "Errors occured during the INI creation. Inspect your INI file before attempting to use it."
+			Write-Error "Errors occurred during the INI creation. Inspect your INI file before attempting to use it."
 		}	
 	}
 	default
