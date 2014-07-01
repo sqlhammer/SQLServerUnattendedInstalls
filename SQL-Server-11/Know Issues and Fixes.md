@@ -1,5 +1,7 @@
 # Known Issues #
-- Script incomplete.
+- SSAS needs further testing.
+- SSRS needs further testing.
+- Data quality server, master data services, and distributed replay services need further testing.
 
 ----------
 # Bug Fixes / Release History #
