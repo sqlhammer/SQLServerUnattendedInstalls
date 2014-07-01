@@ -22,8 +22,7 @@ Your template file will be saved to a location of your choice.
 .\Silent_Install_SQL11.ps1
 
 .NOTES
-At this time SSRS and SSAS features are not supported and this script is intended for MS SQL
-Server 2012 instances only.
+None.
 
 .INPUTS
 None.
@@ -44,12 +43,6 @@ $Script:MajorSQLVersion = 11;
 
 #Instantiates a new com object we'll use for choosing folders
 $object = New-Object -comObject Shell.Application
-
-#setup clipboard alias
-IF ((get-alias | where-object {$_.name -eq "out-clipboard"} | select name) -NotLike "*out-clipboard*")
-{
-	new-alias  Out-Clipboard $env:SystemRoot\system32\clip.exe
-}
 
 ################
 ###Functions####
@@ -128,126 +121,116 @@ function SetInstallationType()
 }
 
 #Set non-configurable options
-function WriteNonConfigurableOptions([string]$InstallType)
+function WriteNonConfigurableOptions()
 {
-	#Install specific settings
-	switch ( $InstallChoice )
-	{
-		"STANDALONEINSTALL"
-		{
-			#Default settings
-			";File created by: $FileCreator" | Out-File $file 
-			";File creation date: $CurrDate" | Out-File $file -Append
+    if (($InstallChoice -eq "STANDALONEINSTALL") -or ($InstallChoice -eq "INSTALLCLUSTER"))
+    {
+        #Default settings
+		";File created by: $FileCreator" | Out-File $file 
+		";File creation date: $CurrDate" | Out-File $file -Append
 			
-			";Script to install new SQL clustered instance" | Out-file $file -Append
-			";SQLSERVER2008 Configuration File" | Out-file $file -Append
-			"" | Out-File $file -Append
-			"[SQLSERVER2008]" | Out-File $file -Append
-			"" | Out-File $file -Append
+		";Script to install new SQL clustered instance" | Out-file $file -Append
+		";SQLSERVER2012 Configuration File" | Out-file $file -Append
+		"" | Out-File $file -Append
+		"[SQLSERVER2012]" | Out-File $file -Append
+		"" | Out-File $file -Append
 			
-			"IACCEPTSQLSERVERLICENSETERMS=`"TRUE`"" | Out-File $file -Append
+		"IACCEPTSQLSERVERLICENSETERMS=`"TRUE`"" | Out-File $file -Append
 			
-			"HELP=`"False`"" |  Out-File $file -Append
-			"INDICATEPROGRESS=`"True`"" |  Out-File $file -Append
-			"QUIET=`"False`"" |  Out-File $file -Append
-			"QUIETSIMPLE=`"True`"" |  Out-File $file -Append
-			"X86=`"False`"" |  Out-File $file -Append
-			"ENU=`"True`"" |  Out-File $file -Append
-			"FTSVCACCOUNT=`"NT AUTHORITY\LOCAL SERVICE`"" |  Out-File $file -Append
+		"HELP=`"False`"" |  Out-File $file -Append
+		"INDICATEPROGRESS=`"True`"" |  Out-File $file -Append
+		"QUIET=`"False`"" |  Out-File $file -Append
+		"QUIETSIMPLE=`"True`"" |  Out-File $file -Append
+		"X86=`"False`"" |  Out-File $file -Append
+		"ENU=`"True`"" |  Out-File $file -Append
+		"FTSVCACCOUNT=`"NT AUTHORITY\LOCAL SERVICE`"" |  Out-File $file -Append
 		
-			#SQL binaries location (in this case to C: I usually use D:)
-			"INSTALLSHAREDDIR=`"C:\Program Files\Microsoft SQL Server`"" |  Out-File $file -Append
-			"INSTALLSHAREDWOWDIR=`"C:\Program Files (x86)\Microsoft SQL Server`"" |  Out-File $file -Append
-			"INSTANCEDIR=`"C:\Program Files\Microsoft SQL Server`"" |  Out-File $file -Append
-			
-			#Installing new cluster
-			"ACTION=`"Install`"" |  Out-File $file -Append
+		#SQL binaries location (in this case to C: I usually use D:)
+		"INSTALLSHAREDDIR=`"C:\Program Files\Microsoft SQL Server`"" |  Out-File $file -Append
+		"INSTALLSHAREDWOWDIR=`"C:\Program Files (x86)\Microsoft SQL Server`"" |  Out-File $file -Append
+		"INSTANCEDIR=`"C:\Program Files\Microsoft SQL Server`"" |  Out-File $file -Append
 
-			#Default settings
-			"ERRORREPORTING=`"False`"" |  Out-File $file -Append
-			"SQMREPORTING=`"False`"" |  Out-File $file -Append
-			"FILESTREAMLEVEL=`"0`"" |  Out-File $file -Append
-			"ISSVCSTARTUPTYPE=`"Automatic`"" |  Out-File $file -Append
-			"ISSVCACCOUNT=`"NT AUTHORITY\NetworkService`"" |  Out-File $file -Append
-			"SQLCOLLATION=`"SQL_Latin1_General_CP1_CI_AS`"" |  Out-File $file -Append
-			"AGTSVCSTARTUPTYPE=`"Automatic`"" |  Out-File $file -Append
-			"SQLSVCSTARTUPTYPE=`"Automatic`"" |  Out-File $file -Append
-			"BROWSERSVCSTARTUPTYPE=`"Automatic`"" |  Out-File $file -Append
-			"TCPENABLED=`"1`"" |  Out-File $file -Append
-		}
-		"INSTALLCLUSTER"
-		{
-			#Default settings
-			";File created by: $FileCreator" | Out-File $file 
-			";File creation date: $CurrDate" | Out-File $file -Append
-			
-			";Script to install new SQL clustered instance" | Out-file $file -Append
-			";SQLSERVER2008 Configuration File" | Out-file $file -Append
-			"" | Out-File $file -Append
-			"[SQLSERVER2008]" | Out-File $file -Append
-			"" | Out-File $file -Append
-			
-			"IACCEPTSQLSERVERLICENSETERMS=`"TRUE`"" | Out-File $file -Append
-			
-			"HELP=`"False`"" |  Out-File $file -Append
-			"INDICATEPROGRESS=`"True`"" |  Out-File $file -Append
-			"QUIET=`"False`"" |  Out-File $file -Append
-			"QUIETSIMPLE=`"True`"" |  Out-File $file -Append
-			"X86=`"False`"" |  Out-File $file -Append
-			"ENU=`"True`"" |  Out-File $file -Append
-			"FTSVCACCOUNT=`"NT AUTHORITY\LOCAL SERVICE`"" |  Out-File $file -Append
-		
-			#SQL binaries location (in this case to C: I usually use D:)
-			"INSTALLSHAREDDIR=`"C:\Program Files\Microsoft SQL Server`"" |  Out-File $file -Append
-			"INSTALLSHAREDWOWDIR=`"C:\Program Files (x86)\Microsoft SQL Server`"" |  Out-File $file -Append
-			"INSTANCEDIR=`"C:\Program Files\Microsoft SQL Server`"" |  Out-File $file -Append
-			
-			#Installing new cluster
-			"ACTION=`"InstallFailoverCluster`"" |  Out-File $file -Append
+        "ERRORREPORTING=`"False`"" |  Out-File $file -Append
+		"SQMREPORTING=`"False`"" |  Out-File $file -Append
+		"FILESTREAMLEVEL=`"0`"" |  Out-File $file -Append
+		"ISSVCSTARTUPTYPE=`"Automatic`"" |  Out-File $file -Append
+		"ISSVCACCOUNT=`"NT AUTHORITY\NetworkService`"" |  Out-File $file -Append
+		"SQLCOLLATION=`"SQL_Latin1_General_CP1_CI_AS`"" |  Out-File $file -Append
 
-			#Default settings
-			"ERRORREPORTING=`"False`"" |  Out-File $file -Append
-			"SQMREPORTING=`"False`"" |  Out-File $file -Append
-			"FILESTREAMLEVEL=`"0`"" |  Out-File $file -Append
-			"ISSVCSTARTUPTYPE=`"Automatic`"" |  Out-File $file -Append
-			"ISSVCACCOUNT=`"NT AUTHORITY\NetworkService`"" |  Out-File $file -Append
-			"SQLCOLLATION=`"SQL_Latin1_General_CP1_CI_AS`"" |  Out-File $file -Append
-		}
-		"ADDNODE"
-		{
-			#Default settings
-			";File created by: $FileCreator" | Out-File $FileNameAddNode 
-			";File creation date: $CurrDate" | Out-File $FileNameAddNode -Append
+        #Install specific settings
+	    if ($InstallChoice -eq "STANDALONEINSTALL")
+	    {
+		    #Installing new server
+		    "ACTION=`"Install`"" |  Out-File $file -Append
+
+		    #Default settings
+		    "AGTSVCSTARTUPTYPE=`"Automatic`"" |  Out-File $file -Append
+		    "SQLSVCSTARTUPTYPE=`"Automatic`"" |  Out-File $file -Append
+		    "BROWSERSVCSTARTUPTYPE=`"Automatic`"" |  Out-File $file -Append
+		    "TCPENABLED=`"1`"" |  Out-File $file -Append
+	    }
+        elseif ($InstallChoice -eq "INSTALLCLUSTER")
+        {
+            #Installing new cluster
+		    "ACTION=`"InstallFailoverCluster`"" |  Out-File $file -Append
+        }
+    }
+    elseif ($InstallChoice -eq "ADDNODE")
+    {
+        #Default settings
+		";File created by: $FileCreator" | Out-File $FileNameAddNode 
+		";File creation date: $CurrDate" | Out-File $FileNameAddNode -Append
 			
-			";Script to install new SQL clustered instance" | Out-file $FileNameAddNode -Append
-			";SQLSERVER2008 Configuration File" | Out-file $FileNameAddNode -Append
-			"" | Out-File $FileNameAddNode -Append
-			"[SQLSERVER2008]" | Out-File $FileNameAddNode -Append
-			"" | Out-File $FileNameAddNode -Append
+		";Script to install new SQL clustered instance" | Out-file $FileNameAddNode -Append
+		";SQLSERVER2012 Configuration File" | Out-file $FileNameAddNode -Append
+		"" | Out-File $FileNameAddNode -Append
+		"[SQLSERVER2012]" | Out-File $FileNameAddNode -Append
+		"" | Out-File $FileNameAddNode -Append
 					
-			"IACCEPTSQLSERVERLICENSETERMS=`"TRUE`"" | Out-File $FileNameAddNode -Append
+		"IACCEPTSQLSERVERLICENSETERMS=`"TRUE`"" | Out-File $FileNameAddNode -Append
 			
-			"HELP=`"False`"" |  Out-File $FileNameAddNode -Append
-			"INDICATEPROGRESS=`"True`"" |  Out-File $FileNameAddNode -Append
-			"QUIET=`"False`"" |  Out-File $FileNameAddNode -Append
-			"QUIETSIMPLE=`"True`"" |  Out-File $FileNameAddNode -Append
-			"X86=`"False`"" |  Out-File $FileNameAddNode -Append
-			"ENU=`"True`"" |  Out-File $FileNameAddNode -Append
-			"FTSVCACCOUNT=`"NT AUTHORITY\LOCAL SERVICE`"" |  Out-File $FileNameAddNode -Append
+		"HELP=`"False`"" |  Out-File $FileNameAddNode -Append
+		"INDICATEPROGRESS=`"True`"" |  Out-File $FileNameAddNode -Append
+		"QUIET=`"False`"" |  Out-File $FileNameAddNode -Append
+		"QUIETSIMPLE=`"True`"" |  Out-File $FileNameAddNode -Append
+		"X86=`"False`"" |  Out-File $FileNameAddNode -Append
+		"ENU=`"True`"" |  Out-File $FileNameAddNode -Append
+		"FTSVCACCOUNT=`"NT AUTHORITY\LOCAL SERVICE`"" |  Out-File $FileNameAddNode -Append
 		
-			#Adding a new node
-			"ACTION=`"AddNode`"" | Out-File $FileNameAddNode -Append
-		}
-		default
-		{
-			Write-Error "Installation choice not recognized."
-		}
-	}
+		#Adding a new node
+		"ACTION=`"AddNode`"" | Out-File $FileNameAddNode -Append
+    }
 }
 
 #Set SQL virtual network name, Instance name, and IP
-function ConfigureInstanceOptions([string]$InstallType)
+function ConfigureInstanceOptions()
 {
+    #SQL Instance Name or default
+	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","By selecting this option you will add updates to this set of installs."
+	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","By selecting this option you will not append updates to this install set."
+	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
+	$caption = "Question!"
+	$message = "Would you like to include updates in this install?"
+	$IncludeUpdates = $Host.UI.PromptForChoice($caption,$message,$choices,0)
+
+	switch ($IncludeUpdates)
+	{
+		0 {$Script:IncludeUpdates="YES"}
+		1 {$Script:IncludeUpdates="NO"}
+	}
+			
+	if ( $Script:IncludeUpdates -eq "YES" )
+	{
+        $UpdatePath = Read-Host "Where would you like your updates to come from? Input `"MU`" for Microsoft Updates or a directory path."
+
+        "UpdateSource=`"$UpdatePath`"" |  Out-File $file -Append
+        "UpdateEnabled=`"True`"" |  Out-File $file -Append
+	}
+	else
+	{
+		"UpdateEnabled=`"False`"" |  Out-File $file -Append
+	}
+
 	switch ( $InstallChoice )
 	{
 		"STANDALONEINSTALL"
@@ -266,7 +249,7 @@ function ConfigureInstanceOptions([string]$InstallType)
 				1 {$Script:IsDefaultInstance="NO"}
 			}
 			
-			if ( $IsDefaultInstance -eq "YES" )
+			if ( $Script:IsDefaultInstance -eq "YES" )
 			{
 				$Script:SQLInstanceName = "MSSQLSERVER"
 				"INSTANCENAME=`"$SQLInstanceName`"" |  Out-File $file -Append
@@ -298,9 +281,10 @@ function ConfigureInstanceOptions([string]$InstallType)
 			"FAILOVERCLUSTERGROUP=`"$SQLVirtualName`"" |  Out-File $file -Append
 
 			#IPAddress (running IPV4 only)
+            $ClusterNetworkName = Read-Host "Enter the Cluster Network Name (ie. Cluster Network 1)"
 			$IPAddress = Read-Host "Enter the IP Address (IPv4 only)"
             $Subnet = Read-Host "Enter the subnet"
-			"FAILOVERCLUSTERIPADDRESSES=`"IPv4;$IPAddress`;Cluster Network 1;$Subnet`""  |  Out-File $file -Append
+			"FAILOVERCLUSTERIPADDRESSES=`"IPv4;$IPAddress`;$ClusterNetworkName;$Subnet`""  |  Out-File $file -Append
 		}
 		"ADDNODE"
 		{
@@ -326,8 +310,23 @@ function ConfigureInstanceOptions([string]$InstallType)
 
 function SetFeatures() #TODO: Consider making this a list of check boxes
 {
-	#The SQLENGINE is always installed for this script.
-	$Features = "FEATURES=SQLENGINE"
+    $Features = "FEATURES="
+    $isFirstFeature = $true;
+
+	##SQLENGINE
+	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install the SQL Engine as one of its features."
+	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit the SQL Engine from the feature set."
+	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
+	$caption = "Question!"
+	$message = "Would you like to have SQL ENGINE installed?"
+	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
+		
+	if ($FeatureChoice -eq 0)
+	{
+        if ($isFirstFeature) { $isFirstFeature = $false; }
+        else { $Features = $Features + ","; }
+		$Features = $Features + "SQLENGINE"
+	}
 	
 	##REPLICATION
 	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install replication as one of its features. NOTE: If replication is already installed for this instance then the installation will throw errors."
@@ -339,7 +338,9 @@ function SetFeatures() #TODO: Consider making this a list of check boxes
 		
 	if ($FeatureChoice -eq 0)
 	{
-		$Features = $Features + ",REPLICATION"
+        if ($isFirstFeature) { $isFirstFeature = $false; }
+        else { $Features = $Features + ","; }
+		$Features = $Features + "REPLICATION"
 	}
 
 	##FULLTEXT
@@ -352,7 +353,54 @@ function SetFeatures() #TODO: Consider making this a list of check boxes
 		
 	if ($FeatureChoice -eq 0)
 	{
-		$Features = $Features + ",FULLTEXT"
+        if ($isFirstFeature) { $isFirstFeature = $false; }
+        else { $Features = $Features + ","; }
+		$Features = $Features + "FULLTEXT"
+	}
+
+    ##DQ
+	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install data quality server as one of its features. NOTE: If data quality server is already installed for this instance then the installation will throw errors."
+	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit data quality server from the feature set."
+	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
+	$caption = "Question!"
+	$message = "Would you like to have DATA QUALITY SERVER installed?"
+	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
+		
+	if ($FeatureChoice -eq 0)
+	{
+        if ($isFirstFeature) { $isFirstFeature = $false; }
+        else { $Features = $Features + ","; }
+		$Features = $Features + "DQ"
+	}
+
+    ##DQC
+	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install data quality client as one of its features. NOTE: If data quality client is already installed for this instance then the installation will throw errors."
+	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit data quality client from the feature set."
+	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
+	$caption = "Question!"
+	$message = "Would you like to have DATA QUALITY CLIENT installed?"
+	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
+		
+	if ($FeatureChoice -eq 0)
+	{
+        if ($isFirstFeature) { $isFirstFeature = $false; }
+        else { $Features = $Features + ","; }
+		$Features = $Features + "DQC"
+	}
+
+    ##MDS
+	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install master data services as one of its features. NOTE: If master data services is already installed for this instance then the installation will throw errors."
+	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit master data services from the feature set."
+	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
+	$caption = "Question!"
+	$message = "Would you like to have MASTER DATA SERVICES installed?"
+	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
+		
+	if ($FeatureChoice -eq 0)
+	{
+        if ($isFirstFeature) { $isFirstFeature = $false; }
+        else { $Features = $Features + ","; }
+		$Features = $Features + "MDS"
 	}
 
 	##BIDS
@@ -365,7 +413,9 @@ function SetFeatures() #TODO: Consider making this a list of check boxes
 		
 	if ($FeatureChoice -eq 0)
 	{
-		$Features = $Features + ",BIDS"
+        if ($isFirstFeature) { $isFirstFeature = $false; }
+        else { $Features = $Features + ","; }
+		$Features = $Features + "BIDS"
 	}
 
 	##IS
@@ -378,7 +428,9 @@ function SetFeatures() #TODO: Consider making this a list of check boxes
 
 	if ($FeatureChoice -eq 0)
 	{
-		$Features = $Features + ",IS"
+        if ($isFirstFeature) { $isFirstFeature = $false; }
+        else { $Features = $Features + ","; }
+		$Features = $Features + "IS"
 	}
 
 	##SSMS,ADV_SSMS
@@ -391,12 +443,14 @@ function SetFeatures() #TODO: Consider making this a list of check boxes
 
 	if ($FeatureChoice -eq 0)
 	{
-		$Features = $Features + ",SSMS,ADV_SSMS"
+        if ($isFirstFeature) { $isFirstFeature = $false; }
+        else { $Features = $Features + ","; }
+		$Features = $Features + "SSMS,ADV_SSMS"
 	}
 	
 	##CONN,BC,SDK,BOL,SNAC_SDK,OCS
 	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install Client Connectivity Tools, Books Online, and SDKs as one of its features. NOTE: If these are already installed for this cluster then the installation will throw errors."
-	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit SQL Server Management Studio from the feature set."
+	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit Client Connectivity Tools, Books Online, and SDKs from the feature set."
 	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
 	$caption = "Question!"
 	$message = "Would you like to have CLIENT CONNECTIVITY TOOLS, BOOKS ONLINE, AND SDKs installed?"
@@ -404,14 +458,65 @@ function SetFeatures() #TODO: Consider making this a list of check boxes
 
 	if ($FeatureChoice -eq 0)
 	{
-		$Features = $Features + ",CONN,BC,SDK,BOL,SNAC_SDK,OCS"
+        if ($isFirstFeature) { $isFirstFeature = $false; }
+        else { $Features = $Features + ","; }
+		$Features = $Features + "CONN,BC,SDK,BOL,SNAC_SDK,OCS,SDK"
+	}
+
+    ##LocalDB
+	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install LocalDB as one of its features. NOTE: If LocalDB is already installed for this cluster then the installation will throw errors."
+	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit LocalDB from the feature set."
+	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
+	$caption = "Question!"
+	$message = "Would you like to have LOCALDB installed?"
+	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
+
+	if ($FeatureChoice -eq 0)
+	{
+        if ($isFirstFeature) { $isFirstFeature = $false; }
+        else { $Features = $Features + ","; }
+		$Features = $Features + "LocalDB"
+	}
+
+    #SSRS
+    $Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install SQL Server Reporting Services as one of its features. NOTE: If SSRS is already installed for this server then the installation will throw errors."
+	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit SQL Server Reporting Services from the feature set."
+	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
+	$caption = "Question!"
+	$message = "Would you like to have SQL SERVER REPORTING SERVICES installed?"
+	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
+
+    $Script:IncludeRS = $false;
+	if ($FeatureChoice -eq 0)
+	{
+        if ($isFirstFeature) { $isFirstFeature = $false; }
+        else { $Features = $Features + ","; }
+		$Features = $Features + "RS"
+        $Script:IncludeRS = $true;
+	}
+
+    #SSAS
+    $Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install SQL Server Analysis Services as one of its features. NOTE: If SSAS is already installed for this server then the installation will throw errors."
+	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit SQL Server Analysis Services from the feature set."
+	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
+	$caption = "Question!"
+	$message = "Would you like to have SQL SERVER ANALYSIS SERVICES installed?"
+	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
+
+    $Script:IncludeAS = $false;
+	if ($FeatureChoice -eq 0)
+	{
+        if ($isFirstFeature) { $isFirstFeature = $false; }
+        else { $Features = $Features + ","; }
+		$Features = $Features + "AS"
+        $Script:IncludeAS = $true;
 	}
 	
 	#WRITE FEATURES
 	$Features |  Out-File $file -Append
 }
 
-function SetSysAdminAccounts([string]$UseDefaults, $InstallType)
+function SetSysAdminAccounts()
 {
 	#SET SYSADMIN ACCOUNT HERE
 	$AcctList = (read-host "Enter a comma delimited list of sysadmin accounts for this instance
@@ -441,7 +546,7 @@ function SetSysAdminAccounts([string]$UseDefaults, $InstallType)
 		1 { $Script:SecChoice="NO" }
 	}
 		
-	IF ($SecChoice -eq "YES")
+	IF ($Script:SecChoice -eq "YES")
 	{
 		"SECURITYMODE=`"SQL`"" | Out-File $file -Append
 	}
@@ -460,7 +565,7 @@ function SetSysAdminAccounts([string]$UseDefaults, $InstallType)
         1 { $Script:CurrentUserSysadmin="NO" }
     }
 
-	if ($CurrentUserSysadmin -eq "YES" )
+	if ($Script:CurrentUserSysadmin -eq "YES" )
 	{
 		"ADDCURRENTUSERASSQLADMIN=`"True`"" |  Out-File $file -Append
 	}
@@ -478,6 +583,18 @@ function SetServiceAccounts()
 	"SQLSVCACCOUNT=`"$SQLServiceAccount`"" |  Out-File $file -Append
 	$Script:SQLAgentAccount = Read-Host "Enter the SQL Agent account to be used"
 	"AGTSVCACCOUNT=`"$SQLAgentAccount`"" |  Out-File $file -Append
+
+    if($Script:IncludeRS)
+    {
+        $Script:RSAccount = Read-Host "Enter the SQL Server Reporting Services account to be used"
+	    "RSSVCACCOUNT=`"$Script:RSAccount`"" |  Out-File $file -Append
+    }
+
+    if($Script:IncludeAS)
+    {
+        $Script:IncludeAS = Read-Host "Enter the SQL Server Analysis Services account to be used"
+	    "ASSVCACCOUNT=`"$Script:IncludeAS`"" |  Out-File $file -Append
+    }
 }
 
 function SetFileDirectories()
@@ -557,7 +674,7 @@ function SetClusterDisks()
 }
 
 #Let the user know the script is complete and where the files reside		
-function ExitMessage([string]$InstallType)
+function ExitMessage()
 {
 	if($SkipMessage -eq "NO")
 	{
@@ -635,9 +752,10 @@ function WriteAddNodeFile()
 	";File creation date: $CurrDate" | Out-File $FileNameAddNode -Append
 
 	";Script to add node to existing SQL cluster" | Out-file $FileNameAddNode -Append
-	";SQLSERVER2008 Configuration File" | Out-file $FileNameAddNode -Append
-	"[SQLSERVER2008]" | Out-File $FileNameAddNode -Append
- 
+	";SQLSERVER2012 Configuration File" | Out-file $FileNameAddNode -Append
+    "" | Out-file $FileNameAddNode -Append
+	"[SQLSERVER2012]" | Out-File $FileNameAddNode -Append
+    "" | Out-file $FileNameAddNode -Append 
 	"IACCEPTSQLSERVERLICENSETERMS=`"TRUE`"" | Out-File $FileNameAddNode -Append
 
 	"ACTION=`"AddNode`"" | Out-File $FileNameAddNode -Append
@@ -659,32 +777,25 @@ function WriteAddNodeFile()
 	"FAILOVERCLUSTERGROUP=`"$SQLVirtualName`"" |  Out-File $FileNameAddNode -Append
 }
 
-function PrintExecCMD([string]$SQLAuthMode)
+function PrintExecCMD()
 {
-	IF ($SQLAuthMode -eq "NO")
+	$ExecCmdPrintOut = "setup.exe /CONFIGURATIONFILE=`"$file`" /SQLSVCPASSWORD=`"<enter pwd>`" /AGTSVCPASSWORD=`"<enter pwd>`""
+    
+    IF ($Script:SecChoice -eq "YES")
 	{
-		$ExecCmdPrintOut = "setup.exe /CONFIGURATIONFILE=`"$file`" /SQLSVCPASSWORD=`"<enter pwd>`" /AGTSVCPASSWORD=`"<enter pwd>`""
-		
-		#export to clipboard
-		$ExecCmdPrintOut | Out-Clipboard
-		
-		Write-Host ""
-		Write-Host $ExecCmdPrintOut
-		Write-Host ""
-		Write-Host "The above command has been outputed to your clipboard."
+		$ExecCmdPrintOut = $ExecCmdPrintOut + " /SAPWD=`"<enter pwd>`"";
 	}
-	ELSE
+    IF ($Script:IncludeRS)
 	{
-		$ExecCmdPrintOut = "setup.exe /CONFIGURATIONFILE=`"$file`" /SQLSVCPASSWORD=`"<enter pwd>`" /AGTSVCPASSWORD=`"<enter pwd>`" /SAPWD=`"<enter pwd>`""
-		
-		#export to clipboard
-		$ExecCmdPrintOut | Out-Clipboard
-		
-		Write-Host ""
-		Write-Host $ExecCmdPrintOut
-		Write-Host ""
-		Write-Host "The above command has been outputed to your clipboard."
+		$ExecCmdPrintOut = $ExecCmdPrintOut + " /RSSVCACCOUNT=`"<enter pwd>`"";
 	}
+    IF ($Script:IncludeAS)
+	{
+		$ExecCmdPrintOut = $ExecCmdPrintOut + " /ASSVCACCOUNT=`"<enter pwd>`"";
+	}
+    
+    Write-Host ""
+    Write-Host $ExecCmdPrintOut
 }
 
 ################
@@ -697,75 +808,28 @@ SetInstallationType
 
 SetFilePath
 
-switch ( $InstallChoice )
+WriteNonConfigurableOptions
+			
+ConfigureInstanceOptions
+			
+if($InstallChoice -ne "ADDNODE")
 {
-	"STANDALONEINSTALL"
-	{
+    SetFeatures
 
-		WriteNonConfigurableOptions $InstallChoice
-		
-		ConfigureInstanceOptions $InstallChoice
-		
-		SetFeatures
-		
-		SetSysAdminAccounts $InstallChoice
-		
-		SetServiceAccounts
-		
-		SetFileDirectories
-		
-		ExitMessage $InstallChoice
-		
-		PrintExecCMD $SecChoice
-	}
-	"INSTALLCLUSTER"
-	{
-		Try
-		{
-			WriteNonConfigurableOptions $InstallChoice
+    SetFileDirectories
 			
-			ConfigureInstanceOptions $InstallChoice
-			
-			SetFeatures
-			
-			SetSysAdminAccounts $InstallChoice
-			
-			SetServiceAccounts $InstallChoice
-
-			SetFileDirectories
-
-			SetClusterDisks
-
-			WriteAddNodeFile
-
-			ExitMessage $InstallChoice
-		
-		    PrintExecCMD $SecChoice
-		}
-		Catch
-		{ 
-			Write-Error "Errors occured during the INI creation. Inspect your INI file before attempting to use it." 
-		}
-	}
-	"ADDNODE"
-	{
-		Try
-		{		
-			WriteNonConfigurableOptions $InstallChoice
-			
-			ConfigureInstanceOptions $InstallChoice
-			
-			SetServiceAccounts $InstallChoice
-
-			ExitMessage $InstallChoice
-		}
-		Catch
-		{ 
-			Write-Error "Errors occurred during the INI creation. Inspect your INI file before attempting to use it."
-		}	
-	}
-	default
-	{
-		Write-Error "Installation choice not recognized."
-	}
+    SetSysAdminAccounts 
 }
+
+SetServiceAccounts 
+
+if($InstallChoice -eq "INSTALLCLUSTER")
+{
+    SetClusterDisks
+
+    WriteAddNodeFile
+}
+
+ExitMessage
+		
+PrintExecCMD
