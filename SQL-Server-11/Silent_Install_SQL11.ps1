@@ -48,6 +48,25 @@ $object = New-Object -comObject Shell.Application
 ###Functions####
 ################
 
+#dialog builder
+function CreateYesNoDialog([string]$caption, [string]$question, [string]$yesMsg, [string]$noMsg, [int]$default = 0)
+{
+    $Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes",$yesMsg
+	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No",$noMsg
+	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
+	$caption = $caption
+	$message = $question
+	$choice = $Host.UI.PromptForChoice($caption,$message,$choices,$default)
+
+    switch ($choice)
+    {
+        0 { $output="YES" }
+        1 { $output="NO" }
+    }
+
+    return $output;
+}
+
 #welcome message
 function WelcomeMessage()
 {
@@ -403,6 +422,23 @@ function SetFeatures() #TODO: Consider making this a list of check boxes
 		$Features = $Features + "MDS"
 	}
 
+    ##DREPLAY_CTLR
+	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install distributed replay client as one of its features. NOTE: If distributed replay client is already installed for this instance then the installation will throw errors."
+	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit distributed replay client from the feature set."
+	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
+	$caption = "Question!"
+	$message = "Would you like to have DISTRIBUTED REPLAY CLIENT installed?"
+	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
+		
+    $Script:IncludeDREPLAY_CTLR = $false;
+	if ($FeatureChoice -eq 0)
+	{
+        if ($isFirstFeature) { $isFirstFeature = $false; }
+        else { $Features = $Features + ","; }
+		$Features = $Features + "DREPLAY_CTLR"
+        $Script:IncludeDREPLAY_CTLR = $true;
+	}
+
 	##BIDS
 	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install Business Intelligence Developer Studio as one of its features. NOTE: If BIDS is already installed for this instance then the installation will throw errors."
 	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit Business Intelligence Developer Studio from the feature set."
@@ -657,6 +693,68 @@ function SetFileDirectories()
 	}
 }
 
+function SetDistributedReplayInformation()
+{
+    $Input = Read-Host "Enter the computer name that the client communicates with for the Distributed Replay Controller service.";
+    "CLTCTLRNAME=`"$Input`"" | Out-File $file -Append;
+
+    $InputList = (Read-Host "Enter the Windows account(s) used to grant permission to the Distributed Replay Controller service.
+    eg DOMAIN\Database Administration, DOMAIN\Account2").split(",");
+
+	$AcctsComplete = [string]""
+	foreach ($Acct in $InputList)
+		{
+		$Acct = $Acct.Trim()
+			$Acct = "`"$Acct`" "
+			$AcctsComplete += $Acct
+	}
+		
+    $Input = Read-Host "Enter the account used by the Distributed Replay Controller service.";
+	"CTLRSVCACCOUNT=$AcctsComplete" |  Out-File $file -Append;
+
+    $Manual = New-Object System.Management.Automation.Host.ChoiceDescription "&Manual","Selecting manual will set the startup type to manual."
+	$Automatic = New-Object System.Management.Automation.Host.ChoiceDescription "&Automatic","Selecting automatic will set the startup type to automatic."
+    $Disabled = New-Object System.Management.Automation.Host.ChoiceDescription "&Disabled","Selecting disabled will set the startup type to disabled."
+	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Manual,$Automatic,$Disabled)
+	$caption = "Question!"
+	$message = "What startup type would you like your Distributed Replay Controller Service set to?"
+	$choice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
+
+    switch ($choice)
+    {
+        0 { $Input="Manual" }
+        1 { $Input="Automatic" }
+        2 { $Input="Disabled" }
+    }
+    "CTLRSTARTUPTYPE=`"$Input`"" | Out-File $file -Append;
+
+    $Input = Read-Host "Enter the account used by the Distributed Replay Client Service.
+    eg NT Service\SQL Server Distributed Replay Client";
+    "CLTSVCACCOUNT=`"$Input`"" | Out-File $file -Append;
+
+    $Manual = New-Object System.Management.Automation.Host.ChoiceDescription "&Manual","Selecting manual will set the startup type to manual."
+	$Automatic = New-Object System.Management.Automation.Host.ChoiceDescription "&Automatic","Selecting automatic will set the startup type to automatic."
+    $Disabled = New-Object System.Management.Automation.Host.ChoiceDescription "&Disabled","Selecting disabled will set the startup type to disabled."
+	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Manual,$Automatic,$Disabled)
+	$caption = "Question!"
+	$message = "What startup type would you like your Distributed Replay Client Service set to?"
+	$choice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
+
+    switch ($choice)
+    {
+        0 { $Input="Manual" }
+        1 { $Input="Automatic" }
+        2 { $Input="Disabled" }
+    }
+    "CLTSTARTUPTYPE=`"$Input`"" | Out-File $file -Append;
+
+    $Input = Read-Host "Enter the result directory for the Distributed Replay Client service. (No trailing slash)";
+    "CLTRESULTDIR=`"$Input`"" | Out-File $file -Append;
+
+    $Input = Read-Host "Enter the working directory for the Distributed Replay Client service. (No trailing slash)";
+    "CLTWORKINGDIR=`"$Input`"" | Out-File $file -Append;
+}
+
 function SetClusterDisks()
 {
 	$DiskList = (read-host "Enter a comma delimited list of failover cluster disks for use in this cluster
@@ -815,6 +913,8 @@ ConfigureInstanceOptions
 if($InstallChoice -ne "ADDNODE")
 {
     SetFeatures
+
+    if($Script:IncludeDREPLAY_CTLR) { SetDistributedReplayInformation }
 
     SetFileDirectories
 			
