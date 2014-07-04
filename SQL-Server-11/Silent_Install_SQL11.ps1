@@ -148,10 +148,10 @@ function WriteNonConfigurableOptions()
 		";File created by: $FileCreator" | Out-File $file 
 		";File creation date: $CurrDate" | Out-File $file -Append
 			
-		";Script to install new SQL clustered instance" | Out-file $file -Append
+		";Script to install new SQL Server instance" | Out-file $file -Append
 		";SQLSERVER2012 Configuration File" | Out-file $file -Append
 		"" | Out-File $file -Append
-		"[SQLSERVER2012]" | Out-File $file -Append
+		"[OPTIONS]" | Out-File $file -Append
 		"" | Out-File $file -Append
 			
 		"IACCEPTSQLSERVERLICENSETERMS=`"TRUE`"" | Out-File $file -Append
@@ -163,6 +163,7 @@ function WriteNonConfigurableOptions()
 		"X86=`"False`"" |  Out-File $file -Append
 		"ENU=`"True`"" |  Out-File $file -Append
 		"FTSVCACCOUNT=`"NT AUTHORITY\LOCAL SERVICE`"" |  Out-File $file -Append
+        "ADDCURRENTUSERASSQLADMIN=`"False`"" |  Out-File $file -Append
 		
 		#SQL binaries location (in this case to C: I usually use D:)
 		"INSTALLSHAREDDIR=`"C:\Program Files\Microsoft SQL Server`"" |  Out-File $file -Append
@@ -200,10 +201,10 @@ function WriteNonConfigurableOptions()
 		";File created by: $FileCreator" | Out-File $FileNameAddNode 
 		";File creation date: $CurrDate" | Out-File $FileNameAddNode -Append
 			
-		";Script to install new SQL clustered instance" | Out-file $FileNameAddNode -Append
+		";Script to install new SQL Server instance" | Out-file $FileNameAddNode -Append
 		";SQLSERVER2012 Configuration File" | Out-file $FileNameAddNode -Append
 		"" | Out-File $FileNameAddNode -Append
-		"[SQLSERVER2012]" | Out-File $FileNameAddNode -Append
+		"[OPTIONS]" | Out-File $FileNameAddNode -Append
 		"" | Out-File $FileNameAddNode -Append
 					
 		"IACCEPTSQLSERVERLICENSETERMS=`"TRUE`"" | Out-File $FileNameAddNode -Append
@@ -215,6 +216,7 @@ function WriteNonConfigurableOptions()
 		"X86=`"False`"" |  Out-File $FileNameAddNode -Append
 		"ENU=`"True`"" |  Out-File $FileNameAddNode -Append
 		"FTSVCACCOUNT=`"NT AUTHORITY\LOCAL SERVICE`"" |  Out-File $FileNameAddNode -Append
+        "ADDCURRENTUSERASSQLADMIN=`"False`"" |  Out-File $FileNameAddNode -Append
 		
 		#Adding a new node
 		"ACTION=`"AddNode`"" | Out-File $FileNameAddNode -Append
@@ -484,7 +486,7 @@ function SetFeatures() #TODO: Consider making this a list of check boxes
 		$Features = $Features + "SSMS,ADV_SSMS"
 	}
 	
-	##CONN,BC,SDK,BOL,SNAC_SDK,OCS
+	##CONN,BC,SDK,BOL,SNAC_SDK
 	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install Client Connectivity Tools, Books Online, and SDKs as one of its features. NOTE: If these are already installed for this cluster then the installation will throw errors."
 	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit Client Connectivity Tools, Books Online, and SDKs from the feature set."
 	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
@@ -496,7 +498,7 @@ function SetFeatures() #TODO: Consider making this a list of check boxes
 	{
         if ($isFirstFeature) { $isFirstFeature = $false; }
         else { $Features = $Features + ","; }
-		$Features = $Features + "CONN,BC,SDK,BOL,SNAC_SDK,OCS,SDK"
+		$Features = $Features + "CONN,BC,SDK,BOL,SNAC_SDK,SDK"
 	}
 
     ##LocalDB
@@ -586,29 +588,6 @@ function SetSysAdminAccounts()
 	{
 		"SECURITYMODE=`"SQL`"" | Out-File $file -Append
 	}
-		
-    #Choose Security Mode
-	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes will add the current user to the list of sysadmins to the server."
-	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will only have the explicit list of sysadmins defined."
-	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
-	$caption = "Question!"
-	$message = "Would you like to add the current user as a sysadmin to this instance?"
-	$CurrentUserSysadmin = $Host.UI.PromptForChoice($caption,$message,$choices,1)
-
-    switch ($CurrentUserSysadmin)
-    {
-        0 { $Script:CurrentUserSysadmin="YES" }
-        1 { $Script:CurrentUserSysadmin="NO" }
-    }
-
-	if ($Script:CurrentUserSysadmin -eq "YES" )
-	{
-		"ADDCURRENTUSERASSQLADMIN=`"True`"" |  Out-File $file -Append
-	}
-    else
-    {
-        "ADDCURRENTUSERASSQLADMIN=`"False`"" |  Out-File $file -Append
-    }
 }
 
 #Set service accounts
@@ -710,7 +689,11 @@ function SetDistributedReplayInformation()
 	}
 		
     $Input = Read-Host "Enter the account used by the Distributed Replay Controller service.";
-	"CTLRSVCACCOUNT=$AcctsComplete" |  Out-File $file -Append;
+	"CTLRUSERS=$AcctsComplete" |  Out-File $file -Append;
+
+    $Input = Read-Host "Enter the account used by the Distributed Replay Controller Service.
+    eg NT Service\SQL Server Distributed Replay Controller";
+    "CTLRSVCACCOUNT=`"$Input`"" | Out-File $file -Append;
 
     $Manual = New-Object System.Management.Automation.Host.ChoiceDescription "&Manual","Selecting manual will set the startup type to manual."
 	$Automatic = New-Object System.Management.Automation.Host.ChoiceDescription "&Automatic","Selecting automatic will set the startup type to automatic."
@@ -852,7 +835,7 @@ function WriteAddNodeFile()
 	";Script to add node to existing SQL cluster" | Out-file $FileNameAddNode -Append
 	";SQLSERVER2012 Configuration File" | Out-file $FileNameAddNode -Append
     "" | Out-file $FileNameAddNode -Append
-	"[SQLSERVER2012]" | Out-File $FileNameAddNode -Append
+	"[OPTIONS]" | Out-File $FileNameAddNode -Append
     "" | Out-file $FileNameAddNode -Append 
 	"IACCEPTSQLSERVERLICENSETERMS=`"TRUE`"" | Out-File $FileNameAddNode -Append
 
