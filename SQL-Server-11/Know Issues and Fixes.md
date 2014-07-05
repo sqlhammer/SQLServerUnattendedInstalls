@@ -1,6 +1,6 @@
 # Known Issues #
-- SSAS needs further testing.
-- SSRS sharepoint mode complete but needs testing.
+- SSAS complete but needs testing.
+- SSRS sharepoint mode is incomplete.
 - Data quality server, master data services, and distributed replay services need further testing.
 
 ----------
