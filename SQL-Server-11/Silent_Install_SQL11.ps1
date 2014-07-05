@@ -341,9 +341,11 @@ function SetFeatures() #TODO: Consider making this a list of check boxes
 	$caption = "Question!"
 	$message = "Would you like to have SQL ENGINE installed?"
 	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
-		
+	
+    $Script:IncludeSQL = $false;
 	if ($FeatureChoice -eq 0)
 	{
+        $Script:IncludeSQL = $true;
         if ($isFirstFeature) { $isFirstFeature = $false; }
         else { $Features = $Features + ","; }
 		$Features = $Features + "SQLENGINE"
@@ -556,48 +558,70 @@ function SetFeatures() #TODO: Consider making this a list of check boxes
 
 function SetSysAdminAccounts()
 {
-	#SET SYSADMIN ACCOUNT HERE
-	$AcctList = (read-host "Enter a comma delimited list of sysadmin accounts for this instance
-	eg DOMAIN\Database Administration, DOMAIN\Account2").split(",")
+    if($Script:IncludeSQL)
+    {
+	    #SET SYSADMIN ACCOUNT HERE
+	    $AcctList = (read-host "Enter a comma delimited list of sysadmin accounts for this instance
+	    eg DOMAIN\Database Administration, DOMAIN\Account2").split(",")
 
-	$AcctsComplete = [string]""
-	foreach ($Acct in $AcctList)
-		{
-		$Acct = $Acct.Trim()
-			$Acct = "`"$Acct`" "
-			$AcctsComplete += $Acct
-	}
+	    $AcctsComplete = [string]""
+	    foreach ($Acct in $AcctList)
+		    {
+		    $Acct = $Acct.Trim()
+			    $Acct = "`"$Acct`" "
+			    $AcctsComplete += $Acct
+	    }
 		
-	"SQLSYSADMINACCOUNTS=$AcctsComplete" |  Out-File $file -Append
+	    "SQLSYSADMINACCOUNTS=$AcctsComplete" |  Out-File $file -Append
 		
-	#Choose Security Mode
-	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will enable mixed mode authentication which allows for Windows or SQL Authentication."
-	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will restrict your installation to Windows Authentication."
-	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
-	$caption = "Question!"
-	$message = "Would you like to use Mixed Mode Authentication (not recommended)?"
-	$SecChoice = $Host.UI.PromptForChoice($caption,$message,$choices,1)
+	    #Choose Security Mode
+	    $Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will enable mixed mode authentication which allows for Windows or SQL Authentication."
+	    $No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will restrict your installation to Windows Authentication."
+	    $choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
+	    $caption = "Question!"
+	    $message = "Would you like to use Mixed Mode Authentication (not recommended)?"
+	    $SecChoice = $Host.UI.PromptForChoice($caption,$message,$choices,1)
 		
-	switch ($SecChoice)
-	{
-		0 { $Script:SecChoice="YES" }
-		1 { $Script:SecChoice="NO" }
-	}
+	    switch ($SecChoice)
+	    {
+		    0 { $Script:SecChoice="YES" }
+		    1 { $Script:SecChoice="NO" }
+	    }
 		
-	IF ($Script:SecChoice -eq "YES")
-	{
-		"SECURITYMODE=`"SQL`"" | Out-File $file -Append
-	}
+	    IF ($Script:SecChoice -eq "YES")
+	    {
+		    "SECURITYMODE=`"SQL`"" | Out-File $file -Append
+	    }
+    }
+
+    if($Script:IncludeAS)
+    {
+        $AcctList = (read-host "Enter a comma delimited list of sysadmin accounts for the Analysis Services
+	    eg DOMAIN\Database Administration, DOMAIN\Account2").split(",")
+
+	    $AcctsComplete = [string]""
+	    foreach ($Acct in $AcctList)
+		    {
+		    $Acct = $Acct.Trim()
+			    $Acct = "`"$Acct`" "
+			    $AcctsComplete += $Acct
+	    }
+		
+	    "ASSYSADMINACCOUNTS=$AcctsComplete" |  Out-File $file -Append
+    }
 }
 
 #Set service accounts
 function SetServiceAccounts()
 {
 	#Choose service accounts
-	$Script:SQLServiceAccount = Read-Host "Enter the SQL Service account to be used"
-	"SQLSVCACCOUNT=`"$SQLServiceAccount`"" |  Out-File $file -Append
-	$Script:SQLAgentAccount = Read-Host "Enter the SQL Agent account to be used"
-	"AGTSVCACCOUNT=`"$SQLAgentAccount`"" |  Out-File $file -Append
+    if($Script:IncludeSQL)
+    {
+	    $Script:SQLServiceAccount = Read-Host "Enter the SQL Service account to be used"
+	    "SQLSVCACCOUNT=`"$SQLServiceAccount`"" |  Out-File $file -Append
+	    $Script:SQLAgentAccount = Read-Host "Enter the SQL Agent account to be used"
+	    "AGTSVCACCOUNT=`"$SQLAgentAccount`"" |  Out-File $file -Append
+    }
 
     if($Script:IncludeRS)
     {
@@ -616,60 +640,111 @@ function SetFileDirectories()
 {
     [string]$VersionString = ([string]$MajorSQLVersion).Replace(".", "_");
 
-	#System databases
-	$SysDBfolder = Read-Host "Select root folder for SQL SYSTEM databases (Do not include the trailing '\')
-	eg. J: or J:\SQLServer"
-	#$SysDBfolder = $object.BrowseForFolder(0, "Select root folder for SQL SYSTEM databases.", 0)
-	if ($SysDBfolder -ne $null) 
+    if($Script:IncludeSQL)
     {
-	    #$SysDB = $SysDBfolder.self.Path + "\SQLSystem"
-	    $SysDB = $SysDBfolder + "\MSSQL$VersionString." + $SQLInstanceName + "\SQLSystem"
-	    "INSTALLSQLDATADIR=`"$SysDB`"" |  Out-File $file -Append
-	}
+	    #System databases
+	    $SysDBfolder = Read-Host "Select root folder for SQL SYSTEM databases (Do not include the trailing '\')
+	    eg. J: or J:\SQLServer"
+	    #$SysDBfolder = $object.BrowseForFolder(0, "Select root folder for SQL SYSTEM databases.", 0)
+	    if ($SysDBfolder -ne $null) 
+        {
+	        #$SysDB = $SysDBfolder.self.Path + "\SQLSystem"
+	        $SysDB = $SysDBfolder + "\MSSQL$VersionString." + $SQLInstanceName + "\SQLSystem"
+	        "INSTALLSQLDATADIR=`"$SysDB`"" |  Out-File $file -Append
+	    }
 
-	#Default User DB location
-	$UserDBfolder = Read-Host "Select root folder for USER DATABASE DATA files (Do not include the trailing '\')
-	eg. J: or J:\SQLServer"
-	#$UserDBfolder = $object.BrowseForFolder(0, "Select root folder for USER DATABASE DATA files.", 0)
-	if ($UserDBfolder -ne $null) 
-    {
-	    #$UserDB = $UserDBfolder.self.Path + "\MSSQL\Data"
-	    $UserDB = $UserDBfolder + "\MSSQL$VersionString." + $SQLInstanceName + "\MSSQL\Data"
-	    "SQLUSERDBDIR=`"$UserDB`"" |  Out-File $file -Append
-	}
+	    #Default User DB location
+	    $UserDBfolder = Read-Host "Select root folder for USER DATABASE DATA files (Do not include the trailing '\')
+	    eg. J: or J:\SQLServer"
+	    #$UserDBfolder = $object.BrowseForFolder(0, "Select root folder for USER DATABASE DATA files.", 0)
+	    if ($UserDBfolder -ne $null) 
+        {
+	        #$UserDB = $UserDBfolder.self.Path + "\MSSQL\Data"
+	        $UserDB = $UserDBfolder + "\MSSQL$VersionString." + $SQLInstanceName + "\MSSQL\Data"
+	        "SQLUSERDBDIR=`"$UserDB`"" |  Out-File $file -Append
+	    }
 
-	#Default User Log location
-	$UserLogfolder = Read-Host "Select root folder for USER DATABASE LOG files (Do not include the trailing '\')
-	eg. J: or J:\SQLServer"
-	#$UserLogfolder = $object.BrowseForFolder(0, "Select root folder for USER DATABASE LOG files", 0)
-	if ($UserLogfolder -ne $null) 
-    {
-	    #$UserLog = $UserLogfolder.self.Path + "\MSSQL\Logs"
-	    $UserLog = $UserLogfolder + "\MSSQL$VersionString." + $SQLInstanceName + "\MSSQL\Logs"
-	    "SQLUSERDBLOGDIR=`"$UserLog`"" |  Out-File $file -Append
-	}
+	    #Default User Log location
+	    $UserLogfolder = Read-Host "Select root folder for USER DATABASE LOG files (Do not include the trailing '\')
+	    eg. J: or J:\SQLServer"
+	    #$UserLogfolder = $object.BrowseForFolder(0, "Select root folder for USER DATABASE LOG files", 0)
+	    if ($UserLogfolder -ne $null) 
+        {
+	        #$UserLog = $UserLogfolder.self.Path + "\MSSQL\Logs"
+	        $UserLog = $UserLogfolder + "\MSSQL$VersionString." + $SQLInstanceName + "\MSSQL\Logs"
+	        "SQLUSERDBLOGDIR=`"$UserLog`"" |  Out-File $file -Append
+	    }
 	
-	#TempDB
-	$TempDBfolder = Read-Host "Select root folder for SQL TempDB (Do not include the trailing '\')
-	eg. J: or J:\SQLServer"
-	#$TempDBfolder = $object.BrowseForFolder(0, "Select root folder for SQL TempDB.", 0)
-	if ($TempDBfolder -ne $null) 
-    {
-	    #$TempDB = $TempDBfolder.self.Path + "\MSSQL\Data"
-	    $TempDB = $TempDBfolder + "\MSSQL$VersionString." + $SQLInstanceName + "\MSSQL\Data"
-	    "SQLTEMPDBDIR=`"$TempDB`"" |  Out-File $file -Append
-	}
+	    #TempDB
+	    $TempDBfolder = Read-Host "Select root folder for SQL TempDB (Do not include the trailing '\')
+	    eg. J: or J:\SQLServer"
+	    #$TempDBfolder = $object.BrowseForFolder(0, "Select root folder for SQL TempDB.", 0)
+	    if ($TempDBfolder -ne $null) 
+        {
+	        #$TempDB = $TempDBfolder.self.Path + "\MSSQL\Data"
+	        $TempDB = $TempDBfolder + "\MSSQL$VersionString." + $SQLInstanceName + "\MSSQL\Data"
+	        "SQLTEMPDBDIR=`"$TempDB`"" |  Out-File $file -Append
+	    }
 
-	#Default backup location
-	$Backupfolder = Read-Host "Select ROOT folder for DATABASE BACKUPS (Do not include the trailing '\')
-	eg. J: or J:\SQLServer"
-	#$Backupfolder = $object.BrowseForFolder(0, "Select root folder for DATABASE BACKUPS", 0)
-	if ($Backupfolder -ne $null) 
+	    #Default backup location
+	    $Backupfolder = Read-Host "Select ROOT folder for DATABASE BACKUPS (Do not include the trailing '\')
+	    eg. J: or J:\SQLServer"
+	    #$Backupfolder = $object.BrowseForFolder(0, "Select root folder for DATABASE BACKUPS", 0)
+	    if ($Backupfolder -ne $null) 
+        {
+	        #$Backup = $Backupfolder.self.Path + "\MSSQL\Backup"
+	        $Backup = $Backupfolder + "\MSSQL$VersionString." + $SQLInstanceName + "\MSSQL\Backup"
+	        "SQLBACKUPDIR=`"$Backup`"" |  Out-File $file -Append
+	    }
+    }
+
+    if($Script:IncludeAS)
     {
-	    #$Backup = $Backupfolder.self.Path + "\MSSQL\Backup"
-	    $Backup = $Backupfolder + "\MSSQL$VersionString." + $SQLInstanceName + "\MSSQL\Backup"
-	    "SQLBACKUPDIR=`"$Backup`"" |  Out-File $file -Append
-	}
+	    #Config databases
+	    $Configfolder = Read-Host "Select root folder for SSAS config files (Do not include the trailing '\')
+	    eg. J: or J:\SQLServer"
+	    if ($ConfigDBfolder -ne $null) 
+        {
+	        $ConfigDir = $ConfigDBfolder + "\MSSQL$VersionString." + $SQLInstanceName + "\OLAP_Config"
+	        "ASCONFIGDIR=`"$ConfigDir`"" |  Out-File $file -Append
+	    }
+
+	    #Default DATA location
+	    $DataFolder = Read-Host "Select root folder for SSAS DATA files (Do not include the trailing '\')
+	    eg. J: or J:\SQLServer"
+	    if ($DataFolder -ne $null) 
+        {
+	        $DataDir = $DataFolder + "\MSSQL$VersionString." + $SQLInstanceName + "\OLAP_Data"
+	        "ASDATADIR=`"$DataDir`"" |  Out-File $file -Append
+	    }
+
+	    #Default Log location
+	    $Logfolder = Read-Host "Select root folder for SSAS LOG files (Do not include the trailing '\')
+	    eg. J: or J:\SQLServer"
+	    if ($Logfolder -ne $null) 
+        {
+	        $LogDir = $Logfolder + "\MSSQL$VersionString." + $SQLInstanceName + "\OLAP_Logs"
+	        "ASLOGDIR=`"$LogDir`"" |  Out-File $file -Append
+	    }
+	
+	    #Temp
+	    $Tempfolder = Read-Host "Select root folder for SSAS Temp files (Do not include the trailing '\')
+	    eg. J: or J:\SQLServer"
+	    if ($Tempfolder -ne $null) 
+        {
+	        $TempDir = $Tempfolder + "\MSSQL$VersionString." + $SQLInstanceName + "\OLAP_Temp"
+	        "ASTEMPDIR=`"$TempDir`"" |  Out-File $file -Append
+	    }
+
+	    #Default backup location
+	    $Backupfolder = Read-Host "Select root folder for SSAS BACKUPS (Do not include the trailing '\')
+	    eg. J: or J:\SQLServer"
+	    if ($Backupfolder -ne $null) 
+        {
+	        $Backup = $Backupfolder + "\MSSQL$VersionString." + $SQLInstanceName + "\OLAP_Backup"
+	        "ASBACKUPDIR=`"$Backup`"" |  Out-File $file -Append
+	    }
+    }
 }
 
 function SetDistributedReplayInformation()
@@ -879,6 +954,95 @@ function PrintExecCMD()
     Write-Host $ExecCmdPrintOut
 }
 
+function SetReportingInformation ()
+{
+    $Manual = New-Object System.Management.Automation.Host.ChoiceDescription "&Manual","Selecting manual will set the startup type to manual."
+	$Automatic = New-Object System.Management.Automation.Host.ChoiceDescription "&Automatic","Selecting automatic will set the startup type to automatic."
+    $Disabled = New-Object System.Management.Automation.Host.ChoiceDescription "&Disabled","Selecting disabled will set the startup type to disabled."
+	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Manual,$Automatic,$Disabled)
+	$caption = "Question!"
+	$message = "What startup type would you like your Reporting Service set to?"
+	$choice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
+
+    switch ($choice)
+    {
+        0 { $Input="Manual" }
+        1 { $Input="Automatic" }
+        2 { $Input="Disabled" }
+    }
+    "RSSVCSTARTUPTYPE=`"$Input`"" | Out-File $file -Append;
+
+    #Default to files only mode
+    "RSINSTALLMODE=`"FilesOnlyMode`"" | Out-File $file -Append;
+}
+
+function SetAnalysisInformation ()
+{
+    $Input = Read-Host "Enter the account used by the Analysis Services (eg. SQL_Latin1_General_CP1_CI_AS):";
+    "ASCOLLATION=`"$Input`"" | Out-File $file -Append;
+
+    $Manual = New-Object System.Management.Automation.Host.ChoiceDescription "&Manual","Selecting manual will set the startup type to manual."
+	$Automatic = New-Object System.Management.Automation.Host.ChoiceDescription "&Automatic","Selecting automatic will set the startup type to automatic."
+    $Disabled = New-Object System.Management.Automation.Host.ChoiceDescription "&Disabled","Selecting disabled will set the startup type to disabled."
+	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Manual,$Automatic,$Disabled)
+	$caption = "Question!"
+	$message = "What startup type would you like your Analysis Services set to?"
+	$choice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
+
+    switch ($choice)
+    {
+        0 { $Input="Manual" }
+        1 { $Input="Automatic" }
+        2 { $Input="Disabled" }
+    }
+    "ASSVCSTARTUPTYPE=`"$Input`"" | Out-File $file -Append;
+
+    $MULTIDIMENSIONAL = New-Object System.Management.Automation.Host.ChoiceDescription "&MULTIDIMENSIONAL","Selecting multideimensional will set the Analysis Server mode as such."
+	$POWERPIVOT = New-Object System.Management.Automation.Host.ChoiceDescription "&POWERPIVOT","Selecting powerpivot will set the Analysis Server mode as such."
+    $TABULAR = New-Object System.Management.Automation.Host.ChoiceDescription "&TABULAR","Selecting tabular will set the Analysis Server mode as such."
+	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($MULTIDIMENSIONAL,$POWERPIVOT,$TABULAR)
+	$caption = "Question!"
+	$message = "What server mode would you like your Analysis Services set to?"
+	$choice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
+
+    switch ($choice)
+    {
+        0 { $Input="MULTIDIMENSIONAL" }
+        1 { $Input="POWERPIVOT" }
+        2 { $Input="TABULAR" }
+    }
+    "ASSERVERMODE=`"$Input`"" | Out-File $file -Append;
+
+    #Choose provider mode
+	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","By selecting yes you will enable the MSOLAP provider to run in-process."
+	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","By selecting no you will disable the MSOLAP provider from running in-process."
+	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
+	$caption = "Question!"
+	$message = "Would you like to enable the MSOLAP provider to run in-process?"
+	$MSOLAPprovider = $Host.UI.PromptForChoice($caption,$message,$choices,0)
+		
+	switch ($MSOLAPprovider)
+	{
+		0 { $Script:MSOLAPprovider="YES" }
+		1 { $Script:MSOLAPprovider="NO" }
+	}
+		
+	IF ($Script:MSOLAPprovider -eq "YES")
+	{
+		"ASPROVIDERMSOLAP=`"1`"" | Out-File $file -Append
+	}
+    else
+    {
+        "ASPROVIDERMSOLAP=`"0`"" | Out-File $file -Append
+    }
+}
+
+function SetSQLEngineInformation ()
+{
+    $Input = Read-Host "Enter the collation that you would like to use for the SQL Engine (eg. SQL_Latin1_General_CP1_CI_AS):"
+    "SQLCOLLATION=`"$Input`"" | Out-File $file -Append
+}
+
 ################
 ###   Main  ####
 ################
@@ -897,7 +1061,13 @@ if($InstallChoice -ne "ADDNODE")
 {
     SetFeatures
 
+    if($Script:IncludeSQL) { SetSQLEngineInformation }
+
     if($Script:IncludeDREPLAY_CTLR) { SetDistributedReplayInformation }
+
+    if($Script:IncludeRS) { SetReportingInformation }
+
+    if($Script:IncludeAS) { SetAnalysisInformation }
 
     SetFileDirectories
 			
