@@ -935,8 +935,12 @@ function WriteAddNodeFile()
 
 function PrintExecCMD()
 {
-	$ExecCmdPrintOut = "setup.exe /CONFIGURATIONFILE=`"$file`" /SQLSVCPASSWORD=`"<enter pwd>`" /AGTSVCPASSWORD=`"<enter pwd>`""
+	$ExecCmdPrintOut = "setup.exe /CONFIGURATIONFILE=`"$file`""
     
+    IF($Script:IncludeSQL)
+    {
+        $ExecCmdPrintOut = $ExecCmdPrintOut + " /SQLSVCPASSWORD=`"<enter pwd>`" /AGTSVCPASSWORD=`"<enter pwd>`"";
+    }
     IF ($Script:SecChoice -eq "YES")
 	{
 		$ExecCmdPrintOut = $ExecCmdPrintOut + " /SAPWD=`"<enter pwd>`"";
@@ -952,6 +956,8 @@ function PrintExecCMD()
     
     Write-Host ""
     Write-Host $ExecCmdPrintOut
+    Write-Host ""
+    Read-Host "Press ENTER to exit."
 }
 
 function SetReportingInformation ()
@@ -1054,9 +1060,9 @@ SetInstallationType
 SetFilePath
 
 WriteNonConfigurableOptions
-			
+
 ConfigureInstanceOptions
-			
+
 if($InstallChoice -ne "ADDNODE")
 {
     SetFeatures
