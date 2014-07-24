@@ -44,6 +44,9 @@ $Script:MajorSQLVersion = 11;
 #Instantiates a new com object we'll use for choosing folders
 $object = New-Object -comObject Shell.Application
 
+# Import Windows Forms Assembly - for our checkbox list
+Add-Type -AssemblyName System.Windows.Forms;
+
 ################
 ###Functions####
 ################
@@ -329,236 +332,152 @@ function ConfigureInstanceOptions()
 	}
 }
 
-function SetFeatures() #TODO: Consider making this a list of check boxes
+function AcceptFeatures($CheckedListBox)
 {
+    #validate entry
+    if(($CheckedListBox -eq $null) -or ($CheckedListBox.CheckedItems.Count -eq 0))
+    {
+        [Windows.Forms.MessageBox]::Show("You must select at least one feature.", "No feature selected", [Windows.Forms.MessageBoxButtons]::OK)
+    }
+
+    #Write features
     $Features = "FEATURES="
-    $isFirstFeature = $true;
 
-	##SQLENGINE
-	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install the SQL Engine as one of its features."
-	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit the SQL Engine from the feature set."
-	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
-	$caption = "Question!"
-	$message = "Would you like to have SQL ENGINE installed?"
-	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
-	
-    $Script:IncludeSQL = $false;
-	if ($FeatureChoice -eq 0)
-	{
-        $Script:IncludeSQL = $true;
-        if ($isFirstFeature) { $isFirstFeature = $false; }
-        else { $Features = $Features + ","; }
-		$Features = $Features + "SQLENGINE"
-	}
-	
-	##REPLICATION
-	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install replication as one of its features. NOTE: If replication is already installed for this instance then the installation will throw errors."
-	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit replication from the feature set."
-	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
-	$caption = "Question!"
-	$message = "Would you like to have REPLICATION installed?"
-	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
-		
-	if ($FeatureChoice -eq 0)
-	{
-        if ($isFirstFeature) { $isFirstFeature = $false; }
-        else { $Features = $Features + ","; }
-		$Features = $Features + "REPLICATION"
-	}
+    foreach ($item in $CheckedListBox.CheckedItems)
+    {
+        $Script:FeatureHash.Set_Item($item.ToString(), $true);
 
-	##FULLTEXT
-	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install full-text search as one of its features. NOTE: If full-text search is already installed for this instance then the installation will throw errors."
-	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit full-text search from the feature set."
-	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
-	$caption = "Question!"
-	$message = "Would you like to have FULLTEXT installed?"
-	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
-		
-	if ($FeatureChoice -eq 0)
-	{
-        if ($isFirstFeature) { $isFirstFeature = $false; }
-        else { $Features = $Features + ","; }
-		$Features = $Features + "FULLTEXT"
-	}
+        switch ($item.ToString())
+        {
+            "Database engine" {$Features += "SQLENGINE,"}
+            "Replication" {$Features += "REPLICATION,"}
+            "Full-text and semantic extractions for search" {$Features += "FULLTEXT,"}
+            "Data quality services" {$Features += "DQ,"}
+            "Analysis services" {$Features += "AS,"}
+            "Reporting services - native" {$Features += "RS,"}
+            "Reporting services - sharepoint" {$Features += "INCOMPLETE,"}
+            "Reporting services add-in for sharepoint products" {$Features += "INCOMPLETE,"}
+            "Data quality client" {$Features += "DQC,"}
+            "SQL Server data tools" {$Features += "BIDS,"}
+            "Client tools connectivity" {$Features += "CONN,"}
+            "Integration services" {$Features += "IS,"}
+            "Client tools backwards compatibility" {$Features += "BC,"}
+            "Client tools SDK" {$Features += "SDK,"}
+            "Documentation components" {$Features += "BOL,"}
+            "Management tools - basic" {$Features += "SSMS,"}
+            "Management tools - advanced" {$Features += "ADV_SSMS,"}
+            "Distributed replay controller" {$Features += "DREPLAY_CTLR,"}
+            "Distributed replay client" {$Features += "DREPLAY_CLT,"}
+            "SQL client connectivity SDK" {$Features += "SNAC_SDK,"}
+            "Master data services" {$Features += "MDS,"}
+            default {Write-Host "Selected feature (" + $item.ToString() + ") not recognized. Debug script."}
+        }
+    }
 
-    ##DQ
-	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install data quality server as one of its features. NOTE: If data quality server is already installed for this instance then the installation will throw errors."
-	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit data quality server from the feature set."
-	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
-	$caption = "Question!"
-	$message = "Would you like to have DATA QUALITY SERVER installed?"
-	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
-		
-	if ($FeatureChoice -eq 0)
-	{
-        if ($isFirstFeature) { $isFirstFeature = $false; }
-        else { $Features = $Features + ","; }
-		$Features = $Features + "DQ"
-	}
-
-    ##DQC
-	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install data quality client as one of its features. NOTE: If data quality client is already installed for this instance then the installation will throw errors."
-	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit data quality client from the feature set."
-	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
-	$caption = "Question!"
-	$message = "Would you like to have DATA QUALITY CLIENT installed?"
-	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
-		
-	if ($FeatureChoice -eq 0)
-	{
-        if ($isFirstFeature) { $isFirstFeature = $false; }
-        else { $Features = $Features + ","; }
-		$Features = $Features + "DQC"
-	}
-
-    ##MDS
-	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install master data services as one of its features. NOTE: If master data services is already installed for this instance then the installation will throw errors."
-	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit master data services from the feature set."
-	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
-	$caption = "Question!"
-	$message = "Would you like to have MASTER DATA SERVICES installed?"
-	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
-		
-	if ($FeatureChoice -eq 0)
-	{
-        if ($isFirstFeature) { $isFirstFeature = $false; }
-        else { $Features = $Features + ","; }
-		$Features = $Features + "MDS"
-	}
-
-    ##DREPLAY_CTLR
-	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install distributed replay client as one of its features. NOTE: If distributed replay client is already installed for this instance then the installation will throw errors."
-	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit distributed replay client from the feature set."
-	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
-	$caption = "Question!"
-	$message = "Would you like to have DISTRIBUTED REPLAY CLIENT installed?"
-	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
-		
-    $Script:IncludeDREPLAY_CTLR = $false;
-	if ($FeatureChoice -eq 0)
-	{
-        if ($isFirstFeature) { $isFirstFeature = $false; }
-        else { $Features = $Features + ","; }
-		$Features = $Features + "DREPLAY_CTLR"
-        $Script:IncludeDREPLAY_CTLR = $true;
-	}
-
-	##BIDS
-	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install Business Intelligence Developer Studio as one of its features. NOTE: If BIDS is already installed for this instance then the installation will throw errors."
-	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit Business Intelligence Developer Studio from the feature set."
-	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
-	$caption = "Question!"
-	$message = "Would you like to have BUSINESS INTELLIGENCE DEVELOPMENT STUDIO installed?"
-	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
-		
-	if ($FeatureChoice -eq 0)
-	{
-        if ($isFirstFeature) { $isFirstFeature = $false; }
-        else { $Features = $Features + ","; }
-		$Features = $Features + "BIDS"
-	}
-
-	##IS
-	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install integration services as one of its features. NOTE: If integration services is already installed for this cluster then the installation will throw errors."
-	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit integration services from the feature set. Integration services is only necessary for remote management of stored SSIS packages and is not necessary for execution."
-	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
-	$caption = "Question!"
-	$message = "Would you like to have INTEGRATED SERVICES installed?"
-	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
-
-	if ($FeatureChoice -eq 0)
-	{
-        if ($isFirstFeature) { $isFirstFeature = $false; }
-        else { $Features = $Features + ","; }
-		$Features = $Features + "IS"
-	}
-
-	##SSMS,ADV_SSMS
-	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install SQL Server Management Studio basic and advanced as one of its features. NOTE: If SSMS is already installed for this cluster then the installation will throw errors."
-	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit SQL Server Management Studio from the feature set."
-	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
-	$caption = "Question!"
-	$message = "Would you like to have SQL SERVER MANAGEMENT STUDIO installed?"
-	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
-
-	if ($FeatureChoice -eq 0)
-	{
-        if ($isFirstFeature) { $isFirstFeature = $false; }
-        else { $Features = $Features + ","; }
-		$Features = $Features + "SSMS,ADV_SSMS"
-	}
-	
-	##CONN,BC,SDK,BOL,SNAC_SDK
-	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install Client Connectivity Tools, Books Online, and SDKs as one of its features. NOTE: If these are already installed for this cluster then the installation will throw errors."
-	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit Client Connectivity Tools, Books Online, and SDKs from the feature set."
-	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
-	$caption = "Question!"
-	$message = "Would you like to have CLIENT CONNECTIVITY TOOLS, BOOKS ONLINE, AND SDKs installed?"
-	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
-
-	if ($FeatureChoice -eq 0)
-	{
-        if ($isFirstFeature) { $isFirstFeature = $false; }
-        else { $Features = $Features + ","; }
-		$Features = $Features + "CONN,BC,SDK,BOL,SNAC_SDK,SDK"
-	}
-
-    ##LocalDB
-	$Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install LocalDB as one of its features. NOTE: If LocalDB is already installed for this cluster then the installation will throw errors."
-	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit LocalDB from the feature set."
-	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
-	$caption = "Question!"
-	$message = "Would you like to have LOCALDB installed?"
-	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
-
-	if ($FeatureChoice -eq 0)
-	{
-        if ($isFirstFeature) { $isFirstFeature = $false; }
-        else { $Features = $Features + ","; }
-		$Features = $Features + "LocalDB"
-	}
-
-    #SSRS
-    $Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install SQL Server Reporting Services as one of its features. NOTE: If SSRS is already installed for this server then the installation will throw errors."
-	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit SQL Server Reporting Services from the feature set."
-	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
-	$caption = "Question!"
-	$message = "Would you like to have SQL SERVER REPORTING SERVICES installed?"
-	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
-
-    $Script:IncludeRS = $false;
-	if ($FeatureChoice -eq 0)
-	{
-        if ($isFirstFeature) { $isFirstFeature = $false; }
-        else { $Features = $Features + ","; }
-		$Features = $Features + "RS"
-        $Script:IncludeRS = $true;
-	}
-
-    #SSAS
-    $Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes you will command this installation to install SQL Server Analysis Services as one of its features. NOTE: If SSAS is already installed for this server then the installation will throw errors."
-	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no you will command this installation to omit SQL Server Analysis Services from the feature set."
-	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
-	$caption = "Question!"
-	$message = "Would you like to have SQL SERVER ANALYSIS SERVICES installed?"
-	$FeatureChoice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
-
-    $Script:IncludeAS = $false;
-	if ($FeatureChoice -eq 0)
-	{
-        if ($isFirstFeature) { $isFirstFeature = $false; }
-        else { $Features = $Features + ","; }
-		$Features = $Features + "AS"
-        $Script:IncludeAS = $true;
-	}
-	
+    #Remove trailing comma
+    $Features = $Features.Substring(0,$Features.Length - 1);
+    	
 	#WRITE FEATURES
 	$Features |  Out-File $file -Append
+
+    $FeatureForm.Close() | Out-Null;
+}
+
+function InitializeFeatureList([REF]$CheckedListBox)
+{
+    [hashtable]$Script:FeatureHash = @{};
+    $Script:FeatureHash.Add("Database engine", $false);    
+    $Script:FeatureHash.Add("Replication", $false);
+    $Script:FeatureHash.Add("Full-text and semantic extractions for search", $false);
+    $Script:FeatureHash.Add("Data quality services", $false);
+    $Script:FeatureHash.Add("Analysis services", $false);
+    $Script:FeatureHash.Add("Reporting services - native", $false);
+    $Script:FeatureHash.Add("Reporting services - sharepoint", $false);
+    $Script:FeatureHash.Add("Reporting services add-in for sharepoint products", $false);
+    $Script:FeatureHash.Add("Data quality client", $false);
+    $Script:FeatureHash.Add("SQL Server data tools", $false);
+    $Script:FeatureHash.Add("Client tools connectivity", $false);
+    $Script:FeatureHash.Add("Integration services", $false);
+    $Script:FeatureHash.Add("Client tools backwards compatibility", $false);
+    $Script:FeatureHash.Add("Client tools SDK", $false);
+    $Script:FeatureHash.Add("Documentation components", $false);
+    $Script:FeatureHash.Add("Management tools - basic", $false);
+    $Script:FeatureHash.Add("Management tools - advanced", $false);
+    $Script:FeatureHash.Add("Distributed replay controller", $false);
+    $Script:FeatureHash.Add("Distributed replay client", $false);
+    $Script:FeatureHash.Add("SQL client connectivity SDK", $false);
+    $Script:FeatureHash.Add("Master data services", $false);
+
+    # Set the list items here to centralize a location for changing the feature list
+    if ($CheckedListBox -ne $null)
+    {
+        $CheckedListBox.Value.Items.Add("Database engine") | Out-Null;
+        $CheckedListBox.Value.Items.Add("Replication") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("Full-text and semantic extractions for search") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("Data quality services") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("Analysis services") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("Reporting services - native") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("Reporting services - sharepoint") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("Reporting services add-in for sharepoint products") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("Data quality client") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("SQL Server data tools") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("Client tools connectivity") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("Integration services") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("Client tools backwards compatibility") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("Client tools SDK") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("Documentation components") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("Management tools - basic") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("Management tools - advanced") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("Distributed replay controller") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("Distributed replay client") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("SQL client connectivity SDK") | Out-Null;    
+        $CheckedListBox.Value.Items.Add("Master data services") | Out-Null;
+    }
+}
+
+function SetFeatures()
+{
+    # Create a Form
+    $FeatureForm = New-Object -TypeName System.Windows.Forms.Form;
+    $FeatureForm.Width = 345;
+    $FeatureForm.Height = 389;
+    $FeatureForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog;
+    $FeatureForm.StartPosition = "CenterScreen";
+    $FeatureForm.MaximizeBox = $false;
+    $FeatureForm.Text = "Feature selection";
+    # Create a CheckedListBox
+    $CheckedListBox = New-Object -TypeName System.Windows.Forms.CheckedListBox;
+    # Add the CheckedListBox to the Form
+    $FeatureForm.Controls.Add($CheckedListBox);
+    # Widen the CheckedListBox
+    $CheckedListBox.Width = 325;
+    $CheckedListBox.Height = 325;
+    $CheckedListBox.Left = 5;
+    $CheckedListBox.Top = 5;
+    $CheckedListBox.CheckOnClick = $true
+    #Create button
+    $OKButton = New-Object -TypeName System.Windows.Forms.Button;
+    $OKButton.Text = "Accept";
+    $OKButton.Top = $CheckedListBox.Top + $CheckedListBox.Height + 2;
+    $OKButton.Left = ($FeatureForm.Width / 2) - ($OKButton.Width / 2);
+    $OKButton.add_Click({AcceptFeatures $CheckedListBox});
+    #Add button
+    $FeatureForm.Controls.Add($OKButton);
+
+    # Add the CheckedListBox to the Form
+    InitializeFeatureList ([REF]$CheckedListBox)
+    $FeatureForm.Controls.Add($CheckedListBox);
+
+    # Clear all existing selections
+    $CheckedListBox.ClearSelected();
+
+    # Show the form
+    $FeatureForm.ShowDialog();
 }
 
 function SetSysAdminAccounts()
 {
-    if($Script:IncludeSQL)
+    if($Script:FeatureHash.Get_Item("Database engine"))
     {
 	    #SET SYSADMIN ACCOUNT HERE
 	    $AcctList = (read-host "Enter a comma delimited list of sysadmin accounts for this instance
@@ -594,7 +513,7 @@ function SetSysAdminAccounts()
 	    }
     }
 
-    if($Script:IncludeAS)
+    if($Script:FeatureHash.Get_Item("Analysis services"))
     {
         $AcctList = (read-host "Enter a comma delimited list of sysadmin accounts for the Analysis Services
 	    eg DOMAIN\Database Administration, DOMAIN\Account2").split(",")
@@ -615,7 +534,7 @@ function SetSysAdminAccounts()
 function SetServiceAccounts()
 {
 	#Choose service accounts
-    if($Script:IncludeSQL)
+    if($Script:FeatureHash.Get_Item("Database engine"))
     {
 	    $Script:SQLServiceAccount = Read-Host "Enter the SQL Service account to be used"
 	    "SQLSVCACCOUNT=`"$SQLServiceAccount`"" |  Out-File $file -Append
@@ -623,16 +542,16 @@ function SetServiceAccounts()
 	    "AGTSVCACCOUNT=`"$SQLAgentAccount`"" |  Out-File $file -Append
     }
 
-    if($Script:IncludeRS)
+    if(($Script:FeatureHash.Get_Item("Reporting services - native")) -or $Script:FeatureHash.Get_Item("Reporting services - sharepoint"))
     {
         $Script:RSAccount = Read-Host "Enter the SQL Server Reporting Services account to be used"
 	    "RSSVCACCOUNT=`"$Script:RSAccount`"" |  Out-File $file -Append
     }
 
-    if($Script:IncludeAS)
+    if($Script:FeatureHash.Get_Item("Analysis services"))
     {
-        $Script:IncludeAS = Read-Host "Enter the SQL Server Analysis Services account to be used"
-	    "ASSVCACCOUNT=`"$Script:IncludeAS`"" |  Out-File $file -Append
+        $Script:ASAccount = Read-Host "Enter the SQL Server Analysis Services account to be used"
+	    "ASSVCACCOUNT=`"$Script:ASAccount`"" |  Out-File $file -Append
     }
 }
 
@@ -640,7 +559,7 @@ function SetFileDirectories()
 {
     [string]$VersionString = ([string]$MajorSQLVersion).Replace(".", "_");
 
-    if($Script:IncludeSQL)
+    if($Script:FeatureHash.Get_Item("Database engine"))
     {
 	    #System databases
 	    $SysDBfolder = Read-Host "Select root folder for SQL SYSTEM databases (Do not include the trailing '\')
@@ -698,7 +617,7 @@ function SetFileDirectories()
 	    }
     }
 
-    if($Script:IncludeAS)
+    if($Script:FeatureHash.Get_Item("Analysis services"))
     {
 	    #Config databases
 	    $Configfolder = Read-Host "Select root folder for SSAS config files (Do not include the trailing '\')
@@ -937,7 +856,7 @@ function PrintExecCMD()
 {
 	$ExecCmdPrintOut = "setup.exe /CONFIGURATIONFILE=`"$file`""
     
-    IF($Script:IncludeSQL)
+    IF($Script:FeatureHash.Get_Item("Database engine"))
     {
         $ExecCmdPrintOut = $ExecCmdPrintOut + " /SQLSVCPASSWORD=`"<enter pwd>`" /AGTSVCPASSWORD=`"<enter pwd>`"";
     }
@@ -945,11 +864,11 @@ function PrintExecCMD()
 	{
 		$ExecCmdPrintOut = $ExecCmdPrintOut + " /SAPWD=`"<enter pwd>`"";
 	}
-    IF ($Script:IncludeRS)
+    IF (($Script:FeatureHash.Get_Item("Reporting services - native")) -or $Script:FeatureHash.Get_Item("Reporting services - sharepoint"))
 	{
 		$ExecCmdPrintOut = $ExecCmdPrintOut + " /RSSVCACCOUNT=`"<enter pwd>`"";
 	}
-    IF ($Script:IncludeAS)
+    IF ($Script:FeatureHash.Get_Item("Analysis services"))
 	{
 		$ExecCmdPrintOut = $ExecCmdPrintOut + " /ASSVCACCOUNT=`"<enter pwd>`"";
 	}
@@ -957,7 +876,7 @@ function PrintExecCMD()
     Write-Host ""
     Write-Host $ExecCmdPrintOut
     Write-Host ""
-    Read-Host "Press ENTER to exit."
+    Read-Host "Press ENTER to exit"
 }
 
 function SetReportingInformation ()
@@ -1067,13 +986,14 @@ if($InstallChoice -ne "ADDNODE")
 {
     SetFeatures
 
-    if($Script:IncludeSQL) { SetSQLEngineInformation }
+    if($Script:FeatureHash.Get_Item("Database engine")) { SetSQLEngineInformation }
 
-    if($Script:IncludeDREPLAY_CTLR) { SetDistributedReplayInformation }
+    if($Script:FeatureHash.Get_Item("Distributed replay controller")) { SetDistributedReplayInformation }
 
-    if($Script:IncludeRS) { SetReportingInformation }
+    if(($Script:FeatureHash.Get_Item("Reporting services - native")) -or $Script:FeatureHash.Get_Item("Reporting services - sharepoint"))
+        { SetReportingInformation }
 
-    if($Script:IncludeAS) { SetAnalysisInformation }
+    if($Script:FeatureHash.Get_Item("Analysis services")) { SetAnalysisInformation }
 
     SetFileDirectories
 			
