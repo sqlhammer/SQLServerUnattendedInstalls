@@ -44,9 +44,6 @@ $Script:MajorSQLVersion = 11;
 #Instantiates a new com object we'll use for choosing folders
 $object = New-Object -comObject Shell.Application
 
-# Import Windows Forms Assembly - for our checkbox list
-Add-Type -AssemblyName System.Windows.Forms;
-
 ################
 ###Functions####
 ################
@@ -339,6 +336,10 @@ function AcceptFeatures($CheckedListBox)
     {
         [Windows.Forms.MessageBox]::Show("You must select at least one feature.", "No feature selected", [Windows.Forms.MessageBoxButtons]::OK)
     }
+    if(($Script:FeatureHash.Get_Item("Reporting services - native")) -and $Script:FeatureHash.Get_Item("Reporting services - sharepoint"))
+    {
+        [Windows.Forms.MessageBox]::Show("You may not select to install reporting services in both native and sharepoint integration mode.", "Invalid feature selection", [Windows.Forms.MessageBoxButtons]::OK)
+    }
 
     #Write features
     $Features = "FEATURES="
@@ -355,8 +356,8 @@ function AcceptFeatures($CheckedListBox)
             "Data quality services" {$Features += "DQ,"}
             "Analysis services" {$Features += "AS,"}
             "Reporting services - native" {$Features += "RS,"}
-            "Reporting services - sharepoint" {$Features += "INCOMPLETE,"}
-            "Reporting services add-in for sharepoint products" {$Features += "INCOMPLETE,"}
+            "Reporting services - sharepoint" {$Features += "RS_SHP,"}
+            "Reporting services add-in for sharepoint products" {$Features += "RS_SHPWFE,"}
             "Data quality client" {$Features += "DQC,"}
             "SQL Server data tools" {$Features += "BIDS,"}
             "Client tools connectivity" {$Features += "CONN,"}
@@ -542,7 +543,7 @@ function SetServiceAccounts()
 	    "AGTSVCACCOUNT=`"$SQLAgentAccount`"" |  Out-File $file -Append
     }
 
-    if(($Script:FeatureHash.Get_Item("Reporting services - native")) -or $Script:FeatureHash.Get_Item("Reporting services - sharepoint"))
+    if($Script:FeatureHash.Get_Item("Reporting services - native"))
     {
         $Script:RSAccount = Read-Host "Enter the SQL Server Reporting Services account to be used"
 	    "RSSVCACCOUNT=`"$Script:RSAccount`"" |  Out-File $file -Append
@@ -881,29 +882,38 @@ function PrintExecCMD()
 
 function SetReportingInformation ()
 {
-    $Manual = New-Object System.Management.Automation.Host.ChoiceDescription "&Manual","Selecting manual will set the startup type to manual."
-	$Automatic = New-Object System.Management.Automation.Host.ChoiceDescription "&Automatic","Selecting automatic will set the startup type to automatic."
-    $Disabled = New-Object System.Management.Automation.Host.ChoiceDescription "&Disabled","Selecting disabled will set the startup type to disabled."
-	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Manual,$Automatic,$Disabled)
-	$caption = "Question!"
-	$message = "What startup type would you like your Reporting Service set to?"
-	$choice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
-
-    switch ($choice)
+    if($Script:FeatureHash.Get_Item("Reporting services - native"))
     {
-        0 { $Input="Manual" }
-        1 { $Input="Automatic" }
-        2 { $Input="Disabled" }
-    }
-    "RSSVCSTARTUPTYPE=`"$Input`"" | Out-File $file -Append;
+        $Manual = New-Object System.Management.Automation.Host.ChoiceDescription "&Manual","Selecting manual will set the startup type to manual."
+	    $Automatic = New-Object System.Management.Automation.Host.ChoiceDescription "&Automatic","Selecting automatic will set the startup type to automatic."
+        $Disabled = New-Object System.Management.Automation.Host.ChoiceDescription "&Disabled","Selecting disabled will set the startup type to disabled."
+	    $choices = [System.Management.Automation.Host.ChoiceDescription[]]($Manual,$Automatic,$Disabled)
+	    $caption = "Question!"
+	    $message = "What startup type would you like your Reporting Service set to?"
+	    $choice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
 
-    #Default to files only mode
-    "RSINSTALLMODE=`"FilesOnlyMode`"" | Out-File $file -Append;
+        switch ($choice)
+        {
+            0 { $Input="Manual" }
+            1 { $Input="Automatic" }
+            2 { $Input="Disabled" }
+        }
+        "RSSVCSTARTUPTYPE=`"$Input`"" | Out-File $file -Append;
+
+        #Default to files only mode
+        "RSINSTALLMODE=`"FilesOnlyMode`"" | Out-File $file -Append;
+    }
+
+    if($Script:FeatureHash.Get_Item("Reporting services - sharepoint"))
+    {
+        #Default to files only mode
+        "RSINSTALLMODE=`"SharePointFilesOnlyMode`"" | Out-File $file -Append;
+    }
 }
 
 function SetAnalysisInformation ()
 {
-    $Input = Read-Host "Enter the account used by the Analysis Services (eg. SQL_Latin1_General_CP1_CI_AS):";
+    $Input = Read-Host "Enter the account used by the Analysis Services (eg. SQL_Latin1_General_CP1_CI_AS)";
     "ASCOLLATION=`"$Input`"" | Out-File $file -Append;
 
     $Manual = New-Object System.Management.Automation.Host.ChoiceDescription "&Manual","Selecting manual will set the startup type to manual."

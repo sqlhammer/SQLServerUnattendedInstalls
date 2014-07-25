@@ -1,10 +1,10 @@
 # Known Issues #
-- SSRS sharepoint mode is incomplete.
 - Probably should not ask about default instance if only shared features are going to be installed.
 
 ----------
 # Bug Fixes / Release History #
 
+- 7/24/2014 9:17:31 PM - Completed SSRS sharepoint integration mode.
 - 7/23/2014 9:03:38 PM - Converted feature selection to a checked listbox instead of the interview mode.
 - 7/13/2014 5:53:43 PM - Changed feature selection from a series of questions to a CheckedListBox form.
 - 7/4/2014 10:45:38 PM - SSAS functionality complete.
