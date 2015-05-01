@@ -17,9 +17,22 @@ function Get-SQLInstallConfiguration ([int]$MajorVersion)
                 $obj.Value.Header += '';
             }
 
-            function ValidateFeatureList ([string[]]$inputFeatures = @())
+            function FeatureRule-ReportingServices([string[]]$inputFeatures)
             {
-                [bool]$isValid = $true;
+                $output = New-OutputObject;
+
+                if ($inputFeatures -contains "RS" -and $inputFeatures -contains "RS_SHP")
+                {
+                    $output.isValid = $false
+                    $output.messages += "Reporting Services Native and SharePoint mode cannot both be included in the same installation."
+                }
+                
+                return $output;
+            }
+
+            function FeatureRule-VersionCompatibility([string[]]$inputFeatures)
+            {
+                $output = New-OutputObject;
 
                 [string[]]$ValidFeatures = @();
                 $ValidFeatures += 'SQLENGINE';
@@ -47,25 +60,54 @@ function Get-SQLInstallConfiguration ([int]$MajorVersion)
 
                 if($MajorSQLVersion -le 11) { $ValidFeatures += 'BIDS'; }
 
-                [string[]]$testFeatureList = @();
-                if($inputFeatures.Count -gt 0)
+                for($i=0;$i -le $inputFeatures.Length-1;$i++)
                 {
-                    $testFeatureList = $inputFeatures;
-                }
-                else
-                {
-                    $testFeatureList = $FeatureList;
-                }
-                
-                for($i=0;$i -le $testFeatureList.Length-1;$i++)
-                {
-                    if([array]::indexof($ValidFeatures,($testFeatureList[$i])) -eq -1)
+                    if([array]::indexof($ValidFeatures,($inputFeatures[$i])) -eq -1)
                     {
-                        $isValid = $false;
+                        $output.isValid = $false
+                        $output.messages += "$($inputFeatures[$i]) is not a valid feature. Verify compatibility with SQL Server version $MajorSQLVersion"
                     }
                 }
 
-                return $isValid;
+                return $output;
+            }
+
+            function New-OutputObject ()
+            {
+                $output = New-Object psobject;
+                $output | Add-Member -MemberType NoteProperty -Name isValid -Value $true
+                $output | Add-Member -MemberType NoteProperty -Name messages -Value @()
+
+                return $output;
+            }
+
+            function IsValidSafeToggle ([bool]$current, [bool]$new)
+            {
+                #This will flip to $false only. $false cannot be converted to $true.
+                if($current) { return $new; }
+
+                return $current;
+            }
+
+            function UpdateOutputObject ([psobject]$mergeObj)
+            {                
+                $mergeObj.isValid = IsValidSafeToggle $input.isValid $mergeObj.isValid;
+                $mergeObj.messages += $input.messages
+
+                return $mergeObj;
+            }
+
+            function ValidateFeatureList ([string[]]$inputFeatures = @())
+            {
+                $output = New-OutputObject;
+
+                if($inputFeatures.Count -gt 0) { $testFeatureList = $inputFeatures; }
+                else { $testFeatureList = $FeatureList; }
+                
+                $output = $output | UpdateOutputObject (FeatureRule-VersionCompatibility $testFeatureList)
+                $output = $output | UpdateOutputObject (FeatureRule-ReportingServices $testFeatureList)
+
+                return $output;
             }
             
             function GetDelimitedString([string[]]$list, [char]$delimiter = ' ', [string]$wrapper = '"')
@@ -126,9 +168,11 @@ function Get-SQLInstallConfiguration ([int]$MajorVersion)
                 
                 $obj.Value.SetHeader($obj);
 
-                if(-not $obj.Value.ValidateFeatureList())
+                $validateFeatureResult = $obj.Value.ValidateFeatureList()
+                if(-not $validateFeatureResult.isValid)
                 {
-                    throw 'Feature validation failed!';
+                    #$validateFeatureResult.messages | foreach { Write-Error "VALIDATION ERROR: $_" };
+                    throw $validateFeatureResult.messages;
                 }
 
                 $obj.Value.SetFeatures($obj);

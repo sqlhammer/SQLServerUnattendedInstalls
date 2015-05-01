@@ -127,9 +127,9 @@ function SetFilePath()
 #Create choices for whether we want to install a new clustered instance, add a node, or perform a stand-alone install
 function SetInstallationType()
 {
-	$Version10 = New-Object System.Management.Automation.Host.ChoiceDescription "2008/2008 R2","By selecting this option you will use configurations for SQL Server 2008/2008 R2."
-	$Version11 = New-Object System.Management.Automation.Host.ChoiceDescription "2012","By selecting this option you will use configurations for SQL Server 2012."
-    $Version12 = New-Object System.Management.Automation.Host.ChoiceDescription "2014","By selecting this option you will use configurations for SQL Server 2014."
+	$Version10 = New-Object System.Management.Automation.Host.ChoiceDescription "1&0 (2008/2008 R2)","By selecting this option you will use configurations for SQL Server 2008/2008 R2."
+	$Version11 = New-Object System.Management.Automation.Host.ChoiceDescription "1&1 (2012)","By selecting this option you will use configurations for SQL Server 2012."
+    $Version12 = New-Object System.Management.Automation.Host.ChoiceDescription "1&2 (2014)","By selecting this option you will use configurations for SQL Server 2014."
 	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Version10,$Version11,$Version12)
 	$caption = "Question!"
 	$message = "What version of SQL Server are you looking to install?"
@@ -320,45 +320,43 @@ function AcceptFeatures($CheckedListBox)
     {
         [Windows.Forms.MessageBox]::Show("You must select at least one feature.", "No feature selected", [Windows.Forms.MessageBoxButtons]::OK)
     }
-    if(($Script:FeatureHash.Get_Item("Reporting services - native")) -and $Script:FeatureHash.Get_Item("Reporting services - sharepoint"))
+    else
     {
-        [Windows.Forms.MessageBox]::Show("You may not select to install reporting services in both native and sharepoint integration mode.", "Invalid feature selection", [Windows.Forms.MessageBoxButtons]::OK)
-    }
-    
-    foreach ($item in $CheckedListBox.CheckedItems)
-    {
-        $Script:FeatureHash.Set_Item($item.ToString(), $true);
-
-        switch ($item.ToString())
+        foreach ($item in $CheckedListBox.CheckedItems)
         {
-            "Database engine" {$config.FeatureList += "SQLENGINE"}
-            "Replication" {$config.FeatureList += "REPLICATION"}
-            "Full-text and semantic extractions for search" {$config.FeatureList += "FULLTEXT"}
-            "Data quality services" {$config.FeatureList += "DQ"}
-            "Analysis services" {$config.FeatureList += "AS"}
-            "Reporting services - native" {$config.FeatureList += "RS"}
-            "Reporting services - sharepoint" {$config.FeatureList += "RS_SHP"}
-            "Reporting services add-in for sharepoint products" {$config.FeatureList += "RS_SHPWFE"}
-            "Data quality client" {$config.FeatureList += "DQC"}
-            "All Tools" {$config.FeatureList += "TOOLS"}
-            "Business Intelligence Development Studio" {$config.FeatureList += "BIDS"}
-            "Client tools connectivity" {$config.FeatureList += "CONN"}
-            "Integration services" {$config.FeatureList += "IS"}
-            "Client tools backwards compatibility" {$config.FeatureList += "BC"}
-            "Client tools SDK" {$config.FeatureList += "SDK"}
-            "Documentation components" {$config.FeatureList += "BOL"}
-            "Management tools - basic" {$config.FeatureList += "SSMS"}
-            "Management tools - advanced" {$config.FeatureList += "ADV_SSMS"}
-            "Distributed replay controller" {$config.FeatureList += "DREPLAY_CTLR"}
-            "Distributed replay client" {$config.FeatureList += "DREPLAY_CLT"}
-            "SQL client connectivity SDK" {$config.FeatureList += "SNAC_SDK"}
-            "Master data services" {$config.FeatureList += "MDS"}
-            "LocalDb" {$config.FeatureList += "LocalDb"}
-            default {Write-Host "Selected feature (" + $item.ToString() + ") not recognized. Debug script."}
-        }
-    }
+            $Script:FeatureHash.Set_Item($item.ToString(), $true);
 
-    $FeatureForm.Close() | Out-Null;
+            switch ($item.ToString())
+            {
+                "Database engine" {$config.FeatureList += "SQLENGINE"}
+                "Replication" {$config.FeatureList += "REPLICATION"}
+                "Full-text and semantic extractions for search" {$config.FeatureList += "FULLTEXT"}
+                "Data quality services" {$config.FeatureList += "DQ"}
+                "Analysis services" {$config.FeatureList += "AS"}
+                "Reporting services - native" {$config.FeatureList += "RS"}
+                "Reporting services - sharepoint" {$config.FeatureList += "RS_SHP"}
+                "Reporting services add-in for sharepoint products" {$config.FeatureList += "RS_SHPWFE"}
+                "Data quality client" {$config.FeatureList += "DQC"}
+                "All Tools" {$config.FeatureList += "TOOLS"}
+                "Business Intelligence Development Studio" {$config.FeatureList += "BIDS"}
+                "Client tools connectivity" {$config.FeatureList += "CONN"}
+                "Integration services" {$config.FeatureList += "IS"}
+                "Client tools backwards compatibility" {$config.FeatureList += "BC"}
+                "Client tools SDK" {$config.FeatureList += "SDK"}
+                "Documentation components" {$config.FeatureList += "BOL"}
+                "Management tools - basic" {$config.FeatureList += "SSMS"}
+                "Management tools - advanced" {$config.FeatureList += "ADV_SSMS"}
+                "Distributed replay controller" {$config.FeatureList += "DREPLAY_CTLR"}
+                "Distributed replay client" {$config.FeatureList += "DREPLAY_CLT"}
+                "SQL client connectivity SDK" {$config.FeatureList += "SNAC_SDK"}
+                "Master data services" {$config.FeatureList += "MDS"}
+                "LocalDb" {$config.FeatureList += "LocalDb"}
+                default {Write-Host "Selected feature (" + $item.ToString() + ") not recognized. Debug script."}
+            }
+        }
+
+        $FeatureForm.Close() | Out-Null;
+    }
 }
 
 function InitializeFeatureList([REF]$CheckedListBox)
@@ -391,29 +389,31 @@ function InitializeFeatureList([REF]$CheckedListBox)
     # Set the list items here to centralize a location for changing the feature list
     if ($CheckedListBox -ne $null)
     {
-        if($config.ValidateFeatureList("SQLENGINE")) { $CheckedListBox.Value.Items.Add("Database engine") | Out-Null; }
-        if($config.ValidateFeatureList("REPLICATION")) { $CheckedListBox.Value.Items.Add("Replication") | Out-Null; }
-        if($config.ValidateFeatureList("FULLTEXT")) { $CheckedListBox.Value.Items.Add("Full-text and semantic extractions for search") | Out-Null; }
-        if($config.ValidateFeatureList("DQ")) { $CheckedListBox.Value.Items.Add("Data quality services") | Out-Null; }
-        if($config.ValidateFeatureList("AS")) { $CheckedListBox.Value.Items.Add("Analysis services") | Out-Null; }
-        if($config.ValidateFeatureList("RS")) { $CheckedListBox.Value.Items.Add("Reporting services - native") | Out-Null; }
-        if($config.ValidateFeatureList("RS_SHP")) { $CheckedListBox.Value.Items.Add("Reporting services - sharepoint") | Out-Null; }
-        if($config.ValidateFeatureList("RS_SHPWFE")) { $CheckedListBox.Value.Items.Add("Reporting services add-in for sharepoint products") | Out-Null; }
-        if($config.ValidateFeatureList("DQC")) { $CheckedListBox.Value.Items.Add("Data quality client") | Out-Null; }
-        if($config.ValidateFeatureList("TOOLS")) { $CheckedListBox.Value.Items.Add("All Tools") | Out-Null; }
-        if($config.ValidateFeatureList("CONN")) { $CheckedListBox.Value.Items.Add("Client tools connectivity") | Out-Null; }
-        if($config.ValidateFeatureList("IS")) { $CheckedListBox.Value.Items.Add("Integration services") | Out-Null; }
-        if($config.ValidateFeatureList("BC")) { $CheckedListBox.Value.Items.Add("Client tools backwards compatibility") | Out-Null; }
-        if($config.ValidateFeatureList("SDK")) { $CheckedListBox.Value.Items.Add("Client tools SDK") | Out-Null; }
-        if($config.ValidateFeatureList("BOL")) { $CheckedListBox.Value.Items.Add("Documentation components") | Out-Null; }
-        if($config.ValidateFeatureList("SSMS")) { $CheckedListBox.Value.Items.Add("Management tools - basic") | Out-Null; }
-        if($config.ValidateFeatureList("ADV_SSMS")) { $CheckedListBox.Value.Items.Add("Management tools - advanced") | Out-Null; }
-        if($config.ValidateFeatureList("DREPLAY_CTLR")) { $CheckedListBox.Value.Items.Add("Distributed replay controller") | Out-Null; }
-        if($config.ValidateFeatureList("DREPLAY_CLT")) { $CheckedListBox.Value.Items.Add("Distributed replay client") | Out-Null; }
-        if($config.ValidateFeatureList("SNAC_SDK")) { $CheckedListBox.Value.Items.Add("SQL client connectivity SDK") | Out-Null; }
-        if($config.ValidateFeatureList("LocalDB")) { $CheckedListBox.Value.Items.Add("LocalDb") | Out-Null; }
-        if($config.ValidateFeatureList("MDS")) { $CheckedListBox.Value.Items.Add("Master data services") | Out-Null; }
-        if($config.ValidateFeatureList("BIDS")) { $CheckedListBox.Value.Items.Add("Business Intelligence Development Studio") | Out-Null; }
+        $a = $config.ValidateFeatureList("SQLENGINE").isValid
+
+        if($config.ValidateFeatureList("SQLENGINE").isValid) { $CheckedListBox.Value.Items.Add("Database engine") | Out-Null; }
+        if($config.ValidateFeatureList("REPLICATION").isValid) { $CheckedListBox.Value.Items.Add("Replication") | Out-Null; }
+        if($config.ValidateFeatureList("FULLTEXT").isValid) { $CheckedListBox.Value.Items.Add("Full-text and semantic extractions for search") | Out-Null; }
+        if($config.ValidateFeatureList("DQ").isValid) { $CheckedListBox.Value.Items.Add("Data quality services") | Out-Null; }
+        if($config.ValidateFeatureList("AS").isValid) { $CheckedListBox.Value.Items.Add("Analysis services") | Out-Null; }
+        if($config.ValidateFeatureList("RS").isValid) { $CheckedListBox.Value.Items.Add("Reporting services - native") | Out-Null; }
+        if($config.ValidateFeatureList("RS_SHP").isValid) { $CheckedListBox.Value.Items.Add("Reporting services - sharepoint") | Out-Null; }
+        if($config.ValidateFeatureList("RS_SHPWFE").isValid) { $CheckedListBox.Value.Items.Add("Reporting services add-in for sharepoint products") | Out-Null; }
+        if($config.ValidateFeatureList("DQC").isValid) { $CheckedListBox.Value.Items.Add("Data quality client") | Out-Null; }
+        if($config.ValidateFeatureList("TOOLS").isValid) { $CheckedListBox.Value.Items.Add("All Tools") | Out-Null; }
+        if($config.ValidateFeatureList("CONN").isValid) { $CheckedListBox.Value.Items.Add("Client tools connectivity") | Out-Null; }
+        if($config.ValidateFeatureList("IS").isValid) { $CheckedListBox.Value.Items.Add("Integration services") | Out-Null; }
+        if($config.ValidateFeatureList("BC").isValid) { $CheckedListBox.Value.Items.Add("Client tools backwards compatibility") | Out-Null; }
+        if($config.ValidateFeatureList("SDK").isValid) { $CheckedListBox.Value.Items.Add("Client tools SDK") | Out-Null; }
+        if($config.ValidateFeatureList("BOL").isValid) { $CheckedListBox.Value.Items.Add("Documentation components") | Out-Null; }
+        if($config.ValidateFeatureList("SSMS").isValid) { $CheckedListBox.Value.Items.Add("Management tools - basic") | Out-Null; }
+        if($config.ValidateFeatureList("ADV_SSMS").isValid) { $CheckedListBox.Value.Items.Add("Management tools - advanced") | Out-Null; }
+        if($config.ValidateFeatureList("DREPLAY_CTLR").isValid) { $CheckedListBox.Value.Items.Add("Distributed replay controller") | Out-Null; }
+        if($config.ValidateFeatureList("DREPLAY_CLT").isValid) { $CheckedListBox.Value.Items.Add("Distributed replay client") | Out-Null; }
+        if($config.ValidateFeatureList("SNAC_SDK").isValid) { $CheckedListBox.Value.Items.Add("SQL client connectivity SDK") | Out-Null; }
+        if($config.ValidateFeatureList("LocalDB").isValid) { $CheckedListBox.Value.Items.Add("LocalDb") | Out-Null; }
+        if($config.ValidateFeatureList("MDS").isValid) { $CheckedListBox.Value.Items.Add("Master data services") | Out-Null; }
+        if($config.ValidateFeatureList("BIDS").isValid) { $CheckedListBox.Value.Items.Add("Business Intelligence Development Studio") | Out-Null; }
     }
 }
 
@@ -883,7 +883,7 @@ function SetAnalysisInformation ()
 
 function SetSQLEngineInformation ()
 {
-    $Input = Read-Host "Enter the collation that you would like to use for the SQL Engine (eg. SQL_Latin1_General_CP1_CI_AS):"
+    $Input = Read-Host "Enter the collation that you would like to use for the SQL Engine (eg. SQL_Latin1_General_CP1_CI_AS)"
     $config.SQLCollation = $Input;
 
     #Choose filestream mode
