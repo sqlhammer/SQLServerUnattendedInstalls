@@ -217,6 +217,7 @@ function Get-SQLInstallConfiguration ([int]$MajorVersion)
             [bool]$ErrorReporting = $false;
             [bool]$SQMReporting = $false;
             [int]$FileStreamLevel = 0;
+            [string]$FileStreamShareName = $null;
             [string]$ISSvcStartupType = $null;
             [string]$ISSvcAccount = $null;
             [string]$SQLCollation = $null;

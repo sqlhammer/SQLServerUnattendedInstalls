@@ -525,6 +525,12 @@ function SetServiceAccounts()
         $Script:ASAccount = Read-Host "Enter the SQL Server Analysis Services account to be used"
         $config.ASSvcAccount = $Script:ASAccount;
     }
+
+    if($Script:FeatureHash.Get_Item("Integration services"))
+    {
+        $Script:ISAccount = Read-Host "Enter the SQL Server Integration services account to be used"
+        $config.ISSvcAccount = $Script:ISAccount;
+    }
 }
 
 function SetFileDirectories()
@@ -893,6 +899,12 @@ function SetSQLEngineInformation ()
         2 { $config.FileStreamLevel = 2; }
         3 { $config.FileStreamLevel = 3; }
 	}
+
+    if (($config.FileStreamLevel -eq 2) -or ($config.FileStreamLevel -eq 3))
+    {
+        $Input = Read-Host "Enter the filestream share that you would like to use:"
+        $config.FileStreamShareName = $Input;
+    }
 }
 
 function WriteConfigFile ()
