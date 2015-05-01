@@ -324,7 +324,7 @@ function AcceptFeatures($CheckedListBox)
     {
         [Windows.Forms.MessageBox]::Show("You may not select to install reporting services in both native and sharepoint integration mode.", "Invalid feature selection", [Windows.Forms.MessageBoxButtons]::OK)
     }
-
+    
     foreach ($item in $CheckedListBox.CheckedItems)
     {
         $Script:FeatureHash.Set_Item($item.ToString(), $true);
@@ -459,7 +459,7 @@ function SetFeatures()
 
 function SetSysAdminAccounts()
 {
-    if($Script:FeatureHash.Get_Item("Database engine"))
+    if($config.FeatureList -contains "SQLENGINE")
     {
 	    #SET SYSADMIN ACCOUNT HERE
 	    $AcctList = (read-host "Enter a comma delimited list of sysadmin accounts for this instance
@@ -490,7 +490,7 @@ function SetSysAdminAccounts()
 	    }
     }
 
-    if($Script:FeatureHash.Get_Item("Analysis services"))
+    if($config.FeatureList -contains "AS")
     {
         $AcctList = (read-host "Enter a comma delimited list of sysadmin accounts for the Analysis Services
 	    eg DOMAIN\Database Administration, DOMAIN\Account2").split(",")
@@ -506,7 +506,7 @@ function SetSysAdminAccounts()
 function SetServiceAccounts()
 {
 	#Choose service accounts
-    if($Script:FeatureHash.Get_Item("Database engine"))
+    if($config.FeatureList -contains "SQLENGINE")
     {
 	    $Script:SQLServiceAccount = Read-Host "Enter the SQL Service account to be used"
         $config.SQLSvcAccount = $SQLServiceAccount;
@@ -514,19 +514,19 @@ function SetServiceAccounts()
         $config.AgtSvcAccount = $SQLAgentAccount;
     }
 
-    if($Script:FeatureHash.Get_Item("Reporting services - native"))
+    if($config.FeatureList -contains "RS")
     {
         $Script:RSAccount = Read-Host "Enter the SQL Server Reporting Services account to be used"
         $config.RSSvcAccount = $Script:RSAccount;
     }
 
-    if($Script:FeatureHash.Get_Item("Analysis services"))
+    if($config.FeatureList -contains "AS")
     {
         $Script:ASAccount = Read-Host "Enter the SQL Server Analysis Services account to be used"
         $config.ASSvcAccount = $Script:ASAccount;
     }
 
-    if($Script:FeatureHash.Get_Item("Integration services"))
+    if($config.FeatureList -contains "IS")
     {
         $Script:ISAccount = Read-Host "Enter the SQL Server Integration services account to be used"
         $config.ISSvcAccount = $Script:ISAccount;
@@ -537,7 +537,7 @@ function SetFileDirectories()
 {
     [string]$VersionString = ([string]$MajorSQLVersion).Replace(".", "_");
 
-    if($Script:FeatureHash.Get_Item("Database engine"))
+    if($config.FeatureList -contains "SQLENGINE")
     {
 	    #System databases
 	    $SysDBfolder = Read-Host "Select directory for SQL SYSTEM databases (Do not include the trailing '\')
@@ -565,7 +565,7 @@ function SetFileDirectories()
 	    $config.SQLBackupDir = $Backupfolder;
     }
 
-    if($Script:FeatureHash.Get_Item("Analysis services"))
+    if($config.FeatureList -contains "AS")
     {
 	    #Config databases
 	    $Configfolder = Read-Host "Select directory for SSAS config files (Do not include the trailing '\')
@@ -762,21 +762,25 @@ function PrintExecCMD()
 {
 	$ExecCmdPrintOut = "setup.exe /CONFIGURATIONFILE=`"$file`""
     
-    IF($Script:FeatureHash.Get_Item("Database engine"))
+    if($config.FeatureList -contains "SQLENGINE")
     {
         $ExecCmdPrintOut = $ExecCmdPrintOut + " /SQLSVCPASSWORD=`"<enter pwd>`" /AGTSVCPASSWORD=`"<enter pwd>`"";
     }
-    IF ($Script:SecChoice -eq "YES")
+    if ($Script:SecChoice -eq "YES")
 	{
 		$ExecCmdPrintOut = $ExecCmdPrintOut + " /SAPWD=`"<enter pwd>`"";
 	}
-    IF (($Script:FeatureHash.Get_Item("Reporting services - native")) -or $Script:FeatureHash.Get_Item("Reporting services - sharepoint"))
+    if (($config.FeatureList -contains "RS") -or ($config.FeatureList -contains "RS_SHP"))
 	{
 		$ExecCmdPrintOut = $ExecCmdPrintOut + " /RSSVCACCOUNT=`"<enter pwd>`"";
 	}
-    IF ($Script:FeatureHash.Get_Item("Analysis services"))
+    if ($config.FeatureList -contains "AS")
 	{
 		$ExecCmdPrintOut = $ExecCmdPrintOut + " /ASSVCACCOUNT=`"<enter pwd>`"";
+	}
+    if ($config.FeatureList -contains "IS")
+	{
+		$ExecCmdPrintOut = $ExecCmdPrintOut + " /ISSVCACCOUNT=`"<enter pwd>`"";
 	}
     
     Write-Host ""
@@ -787,7 +791,7 @@ function PrintExecCMD()
 
 function SetReportingInformation ()
 {
-    if($Script:FeatureHash.Get_Item("Reporting services - native"))
+    if($config.FeatureList -contains "RS")
     {
         $Manual = New-Object System.Management.Automation.Host.ChoiceDescription "&Manual","Selecting manual will set the startup type to manual."
 	    $Automatic = New-Object System.Management.Automation.Host.ChoiceDescription "&Automatic","Selecting automatic will set the startup type to automatic."
@@ -809,7 +813,7 @@ function SetReportingInformation ()
         $config.RSInstallMode = 'FilesOnlyMode';
     }
 
-    if($Script:FeatureHash.Get_Item("Reporting services - sharepoint"))
+    if($config.FeatureList -contains "RS_SHP")
     {
         #Default to files only mode
         $config.RSInstallMode = 'SharePointFilesOnlyMode';
@@ -931,14 +935,14 @@ if($InstallChoice -ne "ADDNODE")
 {
     SetFeatures
 
-    if($Script:FeatureHash.Get_Item("Database engine")) { SetSQLEngineInformation }
+    if($config.FeatureList -contains "SQLENGINE") { SetSQLEngineInformation }
 
-    if($Script:FeatureHash.Get_Item("Distributed replay controller")) { SetDistributedReplayInformation }
+    if($config.FeatureList -contains "DREPLAY_CTLR") { SetDistributedReplayInformation }
 
-    if(($Script:FeatureHash.Get_Item("Reporting services - native")) -or $Script:FeatureHash.Get_Item("Reporting services - sharepoint"))
+    if (($config.FeatureList -contains "RS") -or ($config.FeatureList -contains "RS_SHP"))
         { SetReportingInformation }
 
-    if($Script:FeatureHash.Get_Item("Analysis services")) { SetAnalysisInformation }
+    if($config.FeatureList -contains "AS") { SetAnalysisInformation }
 
     SetFileDirectories
 			
