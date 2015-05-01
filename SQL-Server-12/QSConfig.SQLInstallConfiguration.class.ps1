@@ -211,8 +211,8 @@ function Get-SQLInstallConfiguration ([int]$MajorVersion)
             [bool]$ENU = $true;
             [string]$FTSvcAccount = $null;
             [bool]$AddCurrentUserAsSQLAdmin = $true;
-            [string]$InstallShareDir = $null;
-            [string]$InstallShareWOWDir = $null;
+            [string]$InstallSharedDir = $null;
+            [string]$InstallSharedWOWDir = $null;
             [string]$InstanceDir = $null;
             [bool]$ErrorReporting = $false;
             [bool]$SQMReporting = $false;

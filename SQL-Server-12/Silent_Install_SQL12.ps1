@@ -1,4 +1,5 @@
 
+
 ###################################################################################
 ### SCRIPT GENERATES INI FILES WHICH CAN BE USED TO PERFORM UNATTENDED INSTALLS ###
 ### OF SQL SERVER.                                                              ###
@@ -172,8 +173,8 @@ function WriteNonConfigurableOptions()
 		$config.FTSvcAccount = 'NT AUTHORITY\LOCAL SERVICE'
         
 		#SQL binaries location (in this case to C: I usually use D:)
-		$config.InstallShareDir = 'C:\Program Files\Microsoft SQL Server'
-        $config.InstallShareWOWDir = 'C:\Program Files (x86)\Microsoft SQL Server'
+		$config.InstallSharedDir = 'C:\Program Files\Microsoft SQL Server'
+        $config.InstallSharedWOWDir = 'C:\Program Files (x86)\Microsoft SQL Server'
 		$config.InstanceDir = 'C:\Program Files\Microsoft SQL Server'
 		
         $config.ISSvcStartupType = 'Automatic';
