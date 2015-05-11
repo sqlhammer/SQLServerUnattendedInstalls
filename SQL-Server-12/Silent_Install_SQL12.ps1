@@ -169,19 +169,6 @@ function WriteNonConfigurableOptions()
 
     if (($InstallChoice -eq "STANDALONEINSTALL") -or ($InstallChoice -eq "INSTALLCLUSTER"))
     {
-        #Default settings
-		$config.FTSvcAccount = 'NT AUTHORITY\LOCAL SERVICE'
-        
-		#SQL binaries location (in this case to C: I usually use D:)
-		$config.InstallSharedDir = 'C:\Program Files\Microsoft SQL Server'
-        $config.InstallSharedWOWDir = 'C:\Program Files (x86)\Microsoft SQL Server'
-		$config.InstanceDir = 'C:\Program Files\Microsoft SQL Server'
-		
-        $config.ISSvcStartupType = 'Automatic';
-        $config.ISSvcAccount = 'NT AUTHORITY\NetworkService';
-        
-        $config.SQLCollation = 'SQL_Latin1_General_CP1_CI_AS';
-		
         #Install specific settings
 	    if ($InstallChoice -eq "STANDALONEINSTALL")
 	    {
@@ -506,7 +493,7 @@ function SetSysAdminAccounts()
 function SetServiceAccounts()
 {
 	#Choose service accounts
-    if($config.FeatureList -contains "SQLENGINE")
+    if($config.FeatureList -icontains "SQLENGINE")
     {
 	    $Script:SQLServiceAccount = Read-Host "Enter the SQL Service account to be used"
         $config.SQLSvcAccount = $SQLServiceAccount;
@@ -514,22 +501,28 @@ function SetServiceAccounts()
         $config.AgtSvcAccount = $SQLAgentAccount;
     }
 
-    if($config.FeatureList -contains "RS")
+    if($config.FeatureList -icontains "RS")
     {
         $Script:RSAccount = Read-Host "Enter the SQL Server Reporting Services account to be used"
         $config.RSSvcAccount = $Script:RSAccount;
     }
 
-    if($config.FeatureList -contains "AS")
+    if($config.FeatureList -icontains "AS")
     {
         $Script:ASAccount = Read-Host "Enter the SQL Server Analysis Services account to be used"
         $config.ASSvcAccount = $Script:ASAccount;
     }
 
-    if($config.FeatureList -contains "IS")
+    if($config.FeatureList -icontains "IS")
     {
         $Script:ISAccount = Read-Host "Enter the SQL Server Integration services account to be used"
         $config.ISSvcAccount = $Script:ISAccount;
+    }
+
+    if($config.FeatureList -icontains "FullText")
+    {
+        $Script:FTAccount = Read-Host "Enter the SQL Server Full-text service account to be used"
+        $config.FTSvcAccount = $Script:FTAccount;
     }
 }
 
@@ -537,6 +530,30 @@ function SetFileDirectories()
 {
     [string]$VersionString = ([string]$MajorSQLVersion).Replace(".", "_");
 
+    #SQL binaries location (in this case to C: I usually use D:)
+	$config.InstallSharedDir = 'C:\Program Files\Microsoft SQL Server'
+    $config.InstallSharedWOWDir = 'C:\Program Files (x86)\Microsoft SQL Server'
+	$config.InstanceDir = 'C:\Program Files\Microsoft SQL Server'
+
+    $Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Selecting yes will use default installation directories."
+	$No = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Selecting no will spawn additional prompts for custom install directories."
+	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
+	$caption = "Question!"
+	$message = "Would you like to use the default installation directories for the SQL Server binaries?"
+	$choice = $Host.UI.PromptForChoice($caption,$message,$choices,1)
+
+    if($choice -eq 1)
+    {
+        $config.InstallSQLDataDir = Read-Host "Select directory for the SQL Server binaries (Do not include the trailing '\')
+	    eg. J: or C:\Program Files\Microsoft SQL Server"
+	    
+	    $config.InstallSharedWOWDir = Read-Host "Select directory for the SQL Server 32-bit binaries (Do not include the trailing '\')
+	    eg. J: or C:\Program Files (x86)\Microsoft SQL Server"
+
+	    $config.InstanceDir = Read-Host "Select directory for SQL Server instance files (Do not include the trailing '\')
+	    eg. J: or C:\Program Files\Microsoft SQL Server"
+    }
+    
     if($config.FeatureList -contains "SQLENGINE")
     {
 	    #System databases
@@ -746,8 +763,8 @@ function WriteAddNodeFile()
     $addNodeConfig.MajorSQLVersion = $config.MajorSQLVersion;
 
 	$addNodeConfig.Action = 'AddNode';
-    $addNodeConfig.X86 = $false;	
-	$addNodeConfig.FTSvcAccount = 'NT AUTHORITY\LOCALSERVICE';
+    $addNodeConfig.X86 = $config.X86;	
+	$addNodeConfig.FTSvcAccount = $FTAccount;
 	$addNodeConfig.SQLSvcAccount = $SQLServiceAccount;
     $addNodeConfig.AgtSvcAccount = $SQLAgentAccount;
 	$addNodeConfig.FailoverClusterNetworkName = $SQLVirtualName;
@@ -818,6 +835,25 @@ function SetReportingInformation ()
         #Default to files only mode
         $config.RSInstallMode = 'SharePointFilesOnlyMode';
     }
+}
+
+function SetIntegrationInformation ()
+{
+    $Manual = New-Object System.Management.Automation.Host.ChoiceDescription "&Manual","Selecting manual will set the startup type to manual."
+	$Automatic = New-Object System.Management.Automation.Host.ChoiceDescription "&Automatic","Selecting automatic will set the startup type to automatic."
+    $Disabled = New-Object System.Management.Automation.Host.ChoiceDescription "&Disabled","Selecting disabled will set the startup type to disabled."
+	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Manual,$Automatic,$Disabled)
+	$caption = "Question!"
+	$message = "What startup type would you like your Integration Services set to?"
+	$choice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
+
+    switch ($choice)
+    {
+        0 { $Input="Manual" }
+        1 { $Input="Automatic" }
+        2 { $Input="Disabled" }
+    }
+    $config.ISSvcStartupType = $Input;
 }
 
 function SetAnalysisInformation ()
@@ -943,6 +979,8 @@ if($InstallChoice -ne "ADDNODE")
         { SetReportingInformation }
 
     if($config.FeatureList -contains "AS") { SetAnalysisInformation }
+
+    if($config.FeatureList -contains "IS") { SetIntegrationInformation }
 
     SetFileDirectories
 			
