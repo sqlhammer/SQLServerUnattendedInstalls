@@ -213,7 +213,7 @@ function ConfigureInstanceOptions()
 			
 	if ( $Script:IncludeUpdates -eq "YES" )
 	{
-        $UpdatePath = Read-Host "Where would you like your updates to come from? Input `"MU`" for Microsoft Updates or a directory path."
+        $UpdatePath = Read-Host "Where would you like your updates to come from? Input `"MU`" for Microsoft Updates or a directory path"
 
         $config.UpdateSource = $UpdatePath;
         $config.UpdateEnabled = $true;
@@ -540,7 +540,7 @@ function SetFileDirectories()
 	$choices = [System.Management.Automation.Host.ChoiceDescription[]]($Yes,$No)
 	$caption = "Question!"
 	$message = "Would you like to use the default installation directories for the SQL Server binaries?"
-	$choice = $Host.UI.PromptForChoice($caption,$message,$choices,1)
+	$choice = $Host.UI.PromptForChoice($caption,$message,$choices,0)
 
     if($choice -eq 1)
     {

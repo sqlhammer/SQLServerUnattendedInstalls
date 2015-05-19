@@ -89,9 +89,9 @@ function Get-SQLInstallConfiguration ([int]$MajorVersion)
                 return $current;
             }
 
-            function UpdateOutputObject ([psobject]$mergeObj)
+            function UpdateOutputObject ([psobject]$InputObject, [psobject]$mergeObj)
             {                
-                $mergeObj.isValid = IsValidSafeToggle $input.isValid $mergeObj.isValid;
+                $mergeObj.isValid = IsValidSafeToggle $InputObject.isValid $mergeObj.isValid;
                 $mergeObj.messages += $input.messages
 
                 return $mergeObj;
@@ -104,8 +104,8 @@ function Get-SQLInstallConfiguration ([int]$MajorVersion)
                 if($inputFeatures.Count -gt 0) { $testFeatureList = $inputFeatures; }
                 else { $testFeatureList = $FeatureList; }
                 
-                $output = $output | UpdateOutputObject (FeatureRule-VersionCompatibility $testFeatureList)
-                $output = $output | UpdateOutputObject (FeatureRule-ReportingServices $testFeatureList)
+                $output = UpdateOutputObject $output (FeatureRule-VersionCompatibility $testFeatureList)
+                $output = UpdateOutputObject $output (FeatureRule-ReportingServices $testFeatureList)
 
                 return $output;
             }
@@ -197,7 +197,7 @@ function Get-SQLInstallConfiguration ([int]$MajorVersion)
                 return $SerialExclusions;
             }
 
-            function GetSerailizableList ([ref]$obj)
+            function GetSerializableList ([ref]$obj)
             {
                 [string[]]$SerializableList = ($obj.Value | Get-Member | Where-Object { $_.MemberType -eq 'NoteProperty' } `
                                                     | Where-Object { [array]::indexof((GetSerializationExclusions),($_.Name)) -eq -1 } `
@@ -209,7 +209,7 @@ function Get-SQLInstallConfiguration ([int]$MajorVersion)
             function Serialize ([ref]$obj)
             {
                 [string[]]$output = $Header;
-                foreach($property in $obj.Value.GetSerailizableList($obj))
+                foreach($property in $obj.Value.GetSerializableList($obj))
                 {
                     #write-host $property                    
                     $scriptblock = [scriptblock]::Create("`$obj.Value.$property");
@@ -337,22 +337,26 @@ function Get-SQLInstallConfiguration ([int]$MajorVersion)
 
 
 <#Debugging
+function test-qsconfig
+{
 cls
+. .\QSConfig.SQLInstallConfiguration.class.ps1
 $a = Get-SQLInstallConfiguration(12)
 $a.creator = 'derik'
-#$a.Features += 'derik'
-$a.FeatureList += 'SQLENGINE'
-$a.FeatureList += 'DQ'
 $a.FeatureList += 'TOOLS'
+$a.FeatureList += 'SQLENGINE'
+$a.FeatureList += 'AS'
 #$a.ValidateFeatureList();
-$a.ASSysAdminAccountList += "DOMAIN\FakeFoo"
-$a.ASSysAdminAccountList += "DOMAIN\FakeFoo2"
 $a.Prepare([ref]$a);
+$a.Features
 $a.MajorSQLVersion;
 #$a.GetSerailizableList([ref]$a)
 $a.Serialize([ref]$a);
 #$a.SaveToFile("C:\Users\Derik\Documents\GitHub\SQLServerUnattendedInstalls\SQL-Server-12\test_$(Get-Date -UFormat "%Y%m%d_%H%M").txt", [ref]$a);
 #$a.Header
 #$a.featurestring
+}
+
 #>
+
 
