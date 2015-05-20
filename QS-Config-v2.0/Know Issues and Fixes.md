@@ -1,6 +1,6 @@
 # Known Issues #
 
-- This version is in beta testing.
+- This version is in open beta testing. I look forward to your feedback (derik@sqlhammer.com).
 
 ----------
 # Bug Fixes / Release History #
@@ -12,3 +12,4 @@
 - Added prompt for ISSvcAccount.
 - Added prompt for FileStreamShareName if FileStreamLevel is set to 2 or 3.
 - Corrected various typos. 
+- Corrected syntax compatibility issues with PowerShell v2.0.

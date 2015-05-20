@@ -45,7 +45,7 @@ $object = New-Object -comObject Shell.Application
 
 #Instantiates a new QSConfig.SQLInstallConfiguration object
 $scriptDir = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
-. $scriptDir\QSConfig.SQLInstallConfiguration.class.ps1; 
+. $scriptDir\QS-Config-v2.0.SQLInstallConfiguration.class.ps1; 
 $Script:config = Get-SQLInstallConfiguration;
 
 ################
