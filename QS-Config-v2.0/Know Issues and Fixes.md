@@ -3,6 +3,9 @@
 - This version is in open beta testing. I look forward to your feedback (derik@sqlhammer.com).
 
 ----------
+TODO: Consider how default values affect the add node config when serializing all non-null attributes.
+
+----------
 # Bug Fixes / Release History #
 
 - Refactored with new customer QSConfig.SQLInstallConfiguration class structure.

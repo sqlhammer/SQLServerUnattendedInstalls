@@ -1,4 +1,33 @@
-﻿#TODO: Consider how default values affect the add node config when serializing all non-null attributes.
+﻿###################################################################################
+###								Help Context									###
+###################################################################################
+
+<#
+.SYNOPSIS
+This script is intended for use within the QS-COnfig-v2.0.ps1 script only. It defines a 
+object, QSConfig.SQLInstallConfiguration, which is used for storing and serializing
+all of the necessary configurations for a given SQL Server installation.
+
+.DESCRIPTION
+This script is intended for use within the QS-COnfig-v2.0.ps1 script only. It defines a 
+object, QSConfig.SQLInstallConfiguration, which is used for storing and serializing
+all of the necessary configurations for a given SQL Server installation.
+
+.EXAMPLE
+. $scriptDir\QS-Config-v2.0.SQLInstallConfiguration.class.ps1; 
+$config = Get-SQLInstallConfiguration;
+
+.NOTES
+Author: Derik Hammer
+Twitter: @SQLHammer
+URL: http://www.sqlhammer.com/blog/qs-config/
+
+.INPUTS
+None.
+
+.OUTPUTS
+None.
+#>
 
 function Get-SQLInstallConfiguration ([int]$MajorVersion)
 {

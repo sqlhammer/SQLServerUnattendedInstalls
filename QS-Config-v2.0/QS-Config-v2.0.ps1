@@ -12,19 +12,21 @@
 <#
 .SYNOPSIS
 This script will create the configuration.ini file(s) necessary for an unattended or silent
-installation of MS SQL Server 2014 as a Stand-A-Lone Instance or a Windows Fail-Over Cluster.
+installation of MS SQL Server 2008 through 2014 as a Stand-A-Lone Instance or a Windows Fail-Over Cluster.
 
 .DESCRIPTION
 This script is designed to be a start to finish solution for unattended or silent installations
-of MS SQL Server 2014. It will walk you through a number of questions specific to the server or cluster 
+of MS SQL Server 2008 through 2014. It will walk you through a number of questions specific to the server or cluster 
 that you are installing this instance on and then create the necessary configuration.ini files. 
 Your template file will be saved to a location of your choice.
 
 .EXAMPLE
-.\Silent_Install_SQL12.ps1
+.\QS-Config-v2.0.ps1
 
 .NOTES
-None.
+Author: Derik Hammer
+Twitter: @SQLHammer
+URL: http://www.sqlhammer.com/blog/qs-config/
 
 .INPUTS
 None.
