@@ -199,25 +199,25 @@ function Get-SQLInstallConfiguration ([int]$MajorVersion)
 
             function GetSerializableList ([ref]$obj)
             {
-                [string[]]$SerializableList = ($obj.Value | Get-Member | Where-Object { $_.MemberType -eq 'NoteProperty' } `
+                $SerializableList = $obj.Value | Get-Member | Where-Object { $_.MemberType -eq 'NoteProperty' } `
                                                     | Where-Object { [array]::indexof((GetSerializationExclusions),($_.Name)) -eq -1 } `
-                                                    | Sort-Object Name).Name;
+                                                    | Sort-Object Name;
 
                 return $SerializableList;
             }
-
+            
             function Serialize ([ref]$obj)
             {
                 [string[]]$output = $Header;
-                foreach($property in $obj.Value.GetSerializableList($obj))
-                {
+                
+                $obj.Value.GetSerializableList($obj) | foreach {
                     #write-host $property                    
-                    $scriptblock = [scriptblock]::Create("`$obj.Value.$property");
+                    $scriptblock = [scriptblock]::Create("`$obj.Value.$($_.Name)");
                     [string]$value = (& $scriptblock).ToString().ToUpper().Trim();
                     #write-host $value
                     if($value)
                     {
-                        $output += "$($property.ToUpper()) = `"$value`"";
+                        $output += "$($($_.Name).ToUpper()) = `"$value`"";
                     }
                 }
 
