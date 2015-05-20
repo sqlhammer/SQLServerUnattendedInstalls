@@ -74,6 +74,13 @@ function CreateYesNoDialog([string]$caption, [string]$question, [string]$yesMsg,
 #welcome message
 function WelcomeMessage()
 {
+    Write-Host @"
+QS-Config v2.0`tOpen BETA
+Author:`t`tDerik Hammer
+Twitter:`t@SQLHammer
+Website:`twww.sqlhammer.com
+"@ -BackgroundColor Black -ForegroundColor Green
+
 	#Let the user know what this script does
 	[system.Windows.Forms.MessageBox]::show("You are about to create ini files that can be used to automate installation of SQL instances into a stand-alone server or cluster.
 				
