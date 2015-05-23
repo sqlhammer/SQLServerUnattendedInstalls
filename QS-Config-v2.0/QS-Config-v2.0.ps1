@@ -385,8 +385,6 @@ function InitializeFeatureList([REF]$CheckedListBox)
     # Set the list items here to centralize a location for changing the feature list
     if ($CheckedListBox -ne $null)
     {
-        $a = $config.ValidateFeatureList("SQLENGINE").isValid
-
         if($config.ValidateFeatureList("SQLENGINE").isValid) { $CheckedListBox.Value.Items.Add("Database engine") | Out-Null; }
         if($config.ValidateFeatureList("REPLICATION").isValid) { $CheckedListBox.Value.Items.Add("Replication") | Out-Null; }
         if($config.ValidateFeatureList("FULLTEXT").isValid) { $CheckedListBox.Value.Items.Add("Full-text and semantic extractions for search") | Out-Null; }
