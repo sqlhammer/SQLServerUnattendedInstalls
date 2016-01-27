@@ -1,6 +1,7 @@
 # Known Issues #
 
 - This version is in open beta testing. I look forward to your feedback (derik@sqlhammer.com).
+- UPDATEENABLED and UPDATESOURCE should not be possible when installing a 2008 / 2008 R2 instance.
 
 ----------
 TODO: Consider how default values affect the add node config when serializing all non-null attributes.
